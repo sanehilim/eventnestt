@@ -5,60 +5,45 @@ import { ArrowRight, Shield } from "lucide-react"
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden" style={{ backgroundColor: '#e3e1e2' }}>
-      {/* Background Video */}
-      <div className="border-b border-border/50 p-6 py-2" style={{ backgroundColor: '#e3e1e2' }}>
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            minWidth: '100%',
-            minHeight: '100%',
-            width: 'auto',
-            height: 'auto',
-            objectFit: 'cover'
-          }}
-        >
-          <source src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/f3d8cad2-8091-4809-aac0-eaac74b0be7c-Z4XUCz3CRR7qjaOsoq6rFmbJfIRdgs.mp4" type="video/mp4" />
-        </video>
-        {/* Bottom fade gradient */}
-        <div className="absolute bottom-0 left-0 right-0 h-[60%] bg-gradient-to-t from-background via-background/50 to-transparent" />
+    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#f5f5f5]">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <img
+          src="/image.png"
+          alt="EventNest Background"
+          className="w-full h-full object-cover opacity-30"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#ffffff] via-[#ffffff]/80 to-transparent" />
       </div>
 
       {/* Content */}
       <div className="relative z-10 w-full pt-20 mr-14 lg:mr-0">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="w-full lg:max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
-            <span className="text-sm uppercase mb-6 block text-black animate-blur-in opacity-0 tracking-normal flex items-center gap-2 justify-center lg:justify-start" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+            <span className="text-sm uppercase mb-6 block text-[#6366f1] animate-blur-in opacity-0 tracking-normal flex items-center gap-2 justify-center lg:justify-start" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
               <Shield className="w-4 h-4" />
               Privacy-First Event Ticketing
             </span>
-            <h2 className="text-5xl md:text-6xl lg:text-7xl leading-[1.1] mb-6 text-balance text-black">
+            <h2 className="text-5xl md:text-6xl lg:text-7xl leading-[1.1] mb-6 text-balance text-[#1a1a1a]">
               <span className="block animate-blur-in opacity-0 font-semibold" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
                 <span className="gradient-text">EventNest</span>
               </span>
               <span className="block animate-blur-in opacity-0 font-semibold xl:text-9xl text-7xl" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>Private. Secure.</span>
             </h2>
-            <p className="text-lg leading-relaxed mb-10 max-w-md mx-auto lg:mx-0 text-black animate-blur-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
+            <p className="text-lg leading-relaxed mb-10 max-w-md mx-auto lg:mx-0 text-[#666666] animate-blur-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
               Create and attend events with complete privacy. Your data stays encrypted on-chain, powered by Fhenix Fully Homomorphic Encryption.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-blur-in opacity-0" style={{ animationDelay: '1s', animationFillMode: 'forwards' }}>
               <Link
                 href="/events"
-                className="group inline-flex items-center justify-center gap-3 bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-primary/90 boty-shadow"
+                className="group inline-flex items-center justify-center gap-3 bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-[#333] boty-shadow"
               >
                 Explore Events
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 boty-transition" />
               </Link>
               <Link
                 href="/dashboard"
-                className="group inline-flex items-center justify-center gap-3 bg-secondary text-foreground px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-secondary/80 border border-border"
+                className="group inline-flex items-center justify-center gap-3 bg-white text-[#1a1a1a] px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-[#f5f5f5] border border-[#e5e5e5]"
               >
                 <Shield className="w-4 h-4" />
                 Create Event
@@ -69,10 +54,10 @@ export function Hero() {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-black">
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-[#666666]">
         <span className="text-xs tracking-widest uppercase font-bold">Scroll</span>
-        <div className="w-px h-12 bg-foreground/20 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1/2 bg-foreground/60 animate-pulse" />
+        <div className="w-px h-12 bg-[#e5e5e5] relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1/2 bg-[#1a1a1a] animate-pulse" />
         </div>
       </div>
     </section>

@@ -13,21 +13,12 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: 'EventNest - Privacy-First Event Ticketing on Fhenix',
   description: 'Create and attend events with complete privacy. Your data stays encrypted on-chain, powered by Fhenix Fully Homomorphic Encryption.',
-  generator: 'v0.app',
   keywords: ['events', 'tickets', 'privacy', 'web3', 'blockchain', 'fhenix', 'nft', 'ticketing', 'encrypted'],
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
+        url: '/image.png',
+        type: 'image/png',
       },
     ],
     apple: '/apple-icon.png',
@@ -35,10 +26,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0a0a0f' },
-  ],
+  themeColor: '#FFFFFF',
 }
 
 export default function RootLayout({
@@ -47,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className={`${geistSans.variable} font-sans antialiased`}>
         <Web3Provider>
           {children}
