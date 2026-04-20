@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { Shield, Lock, Eye, Users, Ticket, Zap } from "lucide-react"
 
 const features = [
