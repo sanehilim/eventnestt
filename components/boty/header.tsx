@@ -118,14 +118,14 @@ export function Header() {
                           onClick={openChainModal}
                           className="flex items-center gap-2 bg-[#f5f5f5] text-[#1a1a1a] px-3 py-2 rounded-full text-sm font-medium boty-transition hover:bg-[#e5e5e5] border border-[#e5e5e5]"
                         >
-                          {chain.hasIcon && chain.iconUrl && (
+                          {chain?.hasIcon && chain?.iconUrl && (
                             <img
-                              alt={chain.name ?? 'Chain icon'}
-                              src={chain.iconUrl}
+                              alt={chain?.name ?? 'Chain icon'}
+                              src={chain?.iconUrl}
                               className="w-5 h-5 rounded-full"
                             />
                           )}
-                          <span className="hidden sm:inline">{chain.name}</span>
+                          <span className="hidden sm:inline">{chain?.name}</span>
                         </button>
                       </div>
                     )

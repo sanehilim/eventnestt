@@ -24,7 +24,9 @@
       "Bash(curl -s http://localhost:3000/events/1 -o /dev/null -w \"Event Detail: %{http_code}\\\\n\")",
       "Bash(curl -s http://localhost:3000/dashboard -o /dev/null -w \"Dashboard: %{http_code}\\\\n\")",
       "Bash(curl -s http://localhost:3000/dashboard/create -o /dev/null -w \"Create: %{http_code}\\\\n\")",
-      "Bash(curl -s http://localhost:3000/events/1)"
+      "Bash(curl -s http://localhost:3000/events/1)",
+      "Bash(curl -L https://foundry.paradigm.xyz)",
+      "Bash(bash)"
     ]
   }
 }

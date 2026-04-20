@@ -390,14 +390,18 @@ export function useRegisterForEvent() {
     let ticketId = 0n
     for (const log of receipt.logs) {
       try {
-        const parsed = parseEventLogs({
+        const parsedLogs = parseEventLogs({
           abi,
           data: log.data,
           topics: log.topics
         })
-        if (parsed?.eventName === "TicketMinted") {
-          ticketId = parsed.args.ticketId
+        for (const parsed of parsedLogs) {
+          if (parsed?.eventName === "TicketMinted") {
+            ticketId = parsed.args.ticketId as bigint
+            break
+          }
         }
+        if (ticketId) break
       } catch {
         // skip non-matching logs
       }
