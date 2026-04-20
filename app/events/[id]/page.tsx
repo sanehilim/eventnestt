@@ -28,7 +28,7 @@ function formatDate(timestamp: bigint): string {
 
 export default function EventDetailPage() {
   const params = useParams()
-  const eventId = parseInt(params.id as string) || 1
+  const eventId = Number(params.id)
   const { events, loading } = useEvents()
   const { register, isConnected } = useRegisterForEvent()
   const { address } = useAccount()

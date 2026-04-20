@@ -8,7 +8,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit"
 
 const events = [
   {
-    id: "web3-summit-2024",
+    id: 1,
     name: "Web3 Privacy Summit",
     status: "active",
     date: "2024-06-15",
@@ -19,7 +19,7 @@ const events = [
     isPrivate: true
   },
   {
-    id: "crypto-art-expo",
+    id: 2,
     name: "Crypto Art Expo",
     status: "upcoming",
     date: "2024-07-20",
@@ -30,7 +30,7 @@ const events = [
     isPrivate: true
   },
   {
-    id: "defi-conference",
+    id: 3,
     name: "DeFi Innovation Conference",
     status: "upcoming",
     date: "2024-08-10",
@@ -41,7 +41,7 @@ const events = [
     isPrivate: false
   },
   {
-    id: "hackathon-2024",
+    id: 4,
     name: "Privacy Hackathon",
     status: "draft",
     date: "2024-09-01",
@@ -163,7 +163,7 @@ export default function EventsListPage() {
                             <ViewEvent className="w-4 h-4" />
                           </Link>
                           <Link
-                            href={`/dashboard/events/${event.id}`}
+                            href={`/dashboard/create`}
                             className="p-2 text-muted-foreground hover:text-primary boty-transition rounded-lg hover:bg-secondary"
                             title="Edit Event"
                           >

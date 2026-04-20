@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useAccount, useReadContract, useWriteContract, usePublicClient, waitForTransactionReceipt } from "wagmi"
-import { http, createPublicClient, parseEventLog } from "viem"
+import { useAccount, useWriteContract, useReadContract } from "wagmi"
+import { http, createPublicClient, parseEventLogs, waitForTransactionReceipt } from "viem"
 import { sepolia } from "wagmi/chains"
 import { abi } from "@/contracts/abi"
 
@@ -332,14 +332,18 @@ export function useCreateEvent() {
     let eventId = 0n
     for (const log of receipt.logs) {
       try {
-        const parsed = parseEventLog({
+        const parsedLogs = parseEventLogs({
           abi,
           data: log.data,
           topics: log.topics
         })
-        if (parsed?.eventName === "EventCreated") {
-          eventId = parsed.args.eventId
+        for (const parsed of parsedLogs) {
+          if (parsed?.eventName === "EventCreated") {
+            eventId = parsed.args.eventId as bigint
+            break
+          }
         }
+        if (eventId) break
       } catch {
         // skip non-matching logs
       }
@@ -386,7 +390,7 @@ export function useRegisterForEvent() {
     let ticketId = 0n
     for (const log of receipt.logs) {
       try {
-        const parsed = parseEventLog({
+        const parsed = parseEventLogs({
           abi,
           data: log.data,
           topics: log.topics
