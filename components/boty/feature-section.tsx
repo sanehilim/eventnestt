@@ -113,13 +113,13 @@ export function FeatureSection() {
           </div>
         </div>
 
-        {/* Video/Image Section */}
+        {/* Image Section */}
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center my-0 py-20">
-          {/* Video Image */}
+          {/* Image */}
           <div className="relative aspect-[4/5] rounded-3xl overflow-hidden boty-shadow transition-all duration-700 ease-out opacity-100 scale-100">
             <img
-              src="/hero-video.mp4"
-              alt="EventNest Video"
+              src="/image.png"
+              alt="EventNest"
               className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
