@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Shield, Mail, ArrowRight } from "lucide-react"
+import { Shield, Mail, ArrowRight, Lock } from "lucide-react"
 
 export function Newsletter() {
   const [email, setEmail] = useState("")
