@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Shield, Lock, Star, ArrowRight } from "lucide-react"
+import { Shield, Lock, Star } from "lucide-react"
 
 const testimonials = [
   {
