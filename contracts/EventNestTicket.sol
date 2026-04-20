@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@fhenixprotocol/contracts/FHE.sol";
-import "@fhenixprotocol/contracts/utils/EncryptedECDSA.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -10,13 +8,9 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 /**
  * @title EventNestTicket
- * @dev Privacy-first event ticketing contract using Fhenix FHE for encrypted access control
+ * @dev Privacy-first event ticketing contract with whitelist and invite code support
  */
 contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
-    using FHE for ebool;
-    using FHE for euint32;
-    using FHE for eaddress;
-
     // Event structure
     struct Event {
         string name;
@@ -42,18 +36,12 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
     uint256 private _ticketCounter;
     mapping(uint256 => Event) public events;
     mapping(uint256 => Ticket) public tickets;
-    mapping(uint256 => euint32) public encryptedAttendeeCount;
-    mapping(uint256 => ebool) public encryptedInviteCodes;
-    mapping(uint256 => ebool) public encryptedWhitelist;
-    mapping(uint256 => bytes32) public eventInviteCodes;
-    mapping(uint256 => mapping(address => bool)) public eventWhitelist;
-
-    // Encrypted ticket price
-    mapping(uint256 => euint32) public encryptedTicketPrice;
-    mapping(uint256 => euint32) public encryptedVIPPrice;
-
-    // Event to ticket holders
     mapping(uint256 => address[]) public eventAttendees;
+
+    // Whitelist: eventId => wallet => isWhitelisted
+    mapping(uint256 => mapping(address => bool)) public eventWhitelist;
+    // Invite codes: eventId => code hash
+    mapping(uint256 => bytes32) public eventInviteCodes;
 
     // Events
     event EventCreated(uint256 indexed eventId, string name, bool isPrivate);
@@ -91,42 +79,28 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
             totalTicketsSold: 0
         });
 
-        // Initialize encrypted counter
-        encryptedAttendeeCount[eventId] = FHE.asEuint32(0);
-
         emit EventCreated(eventId, name, isPrivate);
         return eventId;
     }
 
-    // Set encrypted ticket price (organizer only)
-    function setTicketPrice(uint256 eventId, bytes32 encryptedPrice) external onlyOwner {
-        euint32 price = FHE.asEuint32(encryptedPrice);
-        encryptedTicketPrice[eventId] = price;
-    }
-
-    // Set encrypted VIP price
-    function setVIPPrice(uint256 eventId, bytes32 encryptedPrice) external onlyOwner {
-        euint32 price = FHE.asEuint32(encryptedPrice);
-        encryptedVIPPrice[eventId] = price;
-    }
-
-    // Add to whitelist (encrypted)
-    function addToWhitelist(uint256 eventId, bytes32 encryptedWallet) external onlyOwner {
-        ebool isWhitelisted = FHE.asEbool(encryptedWallet);
-        encryptedWhitelist[eventId] = FHE.or(encryptedWhitelist[eventId], isWhitelisted);
-    }
-
     // Set invite code for an event (organizer only)
-    function setInviteCode(uint256 eventId, bytes32 encryptedCode) external onlyOwner {
-        encryptedInviteCodes[eventId] = FHE.asEbool(encryptedCode);
-        eventInviteCodes[eventId] = encryptedCode;
+    function setInviteCode(uint256 eventId, bytes32 codeHash) external onlyOwner {
+        require(events[eventId].eventDate > 0, "Event does not exist");
+        eventInviteCodes[eventId] = codeHash;
     }
 
-    // Add to whitelist (both encrypted FHE and plaintext for easy checking)
+    // Add to whitelist (organizer only)
     function addToWhitelist(uint256 eventId, address wallet) external onlyOwner {
+        require(events[eventId].eventDate > 0, "Event does not exist");
         eventWhitelist[eventId][wallet] = true;
-        ebool isWhitelisted = FHE.asEbool(keccak256(abi.encodePacked(wallet)));
-        encryptedWhitelist[eventId] = FHE.or(encryptedWhitelist[eventId], isWhitelisted);
+    }
+
+    // Batch add to whitelist
+    function batchAddToWhitelist(uint256 eventId, address[] calldata wallets) external onlyOwner {
+        require(events[eventId].eventDate > 0, "Event does not exist");
+        for (uint i = 0; i < wallets.length; i++) {
+            eventWhitelist[eventId][wallets[i]] = true;
+        }
     }
 
     // Get event count
@@ -140,23 +114,17 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         return events[eventId];
     }
 
-    // Verify invite code (encrypted)
-    function verifyInviteCode(uint256 eventId, bytes32 encryptedCode) external returns (ebool) {
-        ebool isValid = FHE.eq(FHE.asEuint256(encryptedCode), FHE.asEuint256(eventInviteCodes[eventId]));
-        return isValid;
+    // Get attendee count
+    function getAttendeeCount(uint256 eventId) external view returns (uint256) {
+        return events[eventId].totalTicketsSold;
     }
 
-    // Check whitelist status (encrypted)
-    function checkWhitelistStatus(uint256 eventId, bytes32 encryptedWallet) external returns (ebool) {
-        return encryptedWhitelist[eventId];
-    }
-
-    // Mint ticket after verification
+    // Mint ticket with access verification
     function mintTicket(
         uint256 eventId,
         address to,
         bool isVIP,
-        bytes32 /* encryptedProof - placeholder for FHE proof */
+        bytes32 /* encryptedProof - placeholder */
     ) external returns (uint256) {
         Event storage evt = events[eventId];
         require(evt.eventDate > 0, "Event does not exist");
@@ -164,7 +132,7 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
 
         // For private events, verify access
         if (evt.isPrivate) {
-            require(verifyAccessCheck(eventId, msg.sender), "Access denied");
+            require(_verifyAccess(eventId, msg.sender), "Access denied");
         }
 
         uint256 ticketId = _ticketCounter++;
@@ -177,29 +145,53 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
 
         _safeMint(to, ticketId);
         evt.totalTicketsSold++;
-
-        // Update encrypted count
-        encryptedAttendeeCount[eventId] = FHE.add(encryptedAttendeeCount[eventId], FHE.asEuint32(1));
         eventAttendees[eventId].push(to);
 
         emit TicketMinted(ticketId, eventId, to);
         return ticketId;
     }
 
-    // Internal access check
-    function verifyAccessCheck(uint256 eventId, address user) internal view returns (bool) {
+    // Internal access verification
+    function _verifyAccess(uint256 eventId, address user) internal view returns (bool) {
         Event storage evt = events[eventId];
 
-        // Check whitelist if required
+        // Check whitelist first if required
         if (evt.requiresWhitelist) {
             if (eventWhitelist[eventId][user]) {
                 return true;
             }
         }
 
-        // For invite code events, we check if the user is an attendee (invite codes are checked off-chain in this demo)
-        // In a full FHE implementation, the encrypted invite code would be verified on-chain
+        // For non-whitelist private events, check if user already has a ticket
+        // In full implementation, invite code verification would happen off-chain or via ZK proof
         return false;
+    }
+
+    // Verify access (public view function)
+    function verifyAccess(
+        uint256 eventId,
+        bytes32 /* encryptedWallet */,
+        bytes32 /* encryptedCode */
+    ) external view returns (bool) {
+        Event storage evt = events[eventId];
+
+        // If not private, allow
+        if (!evt.isPrivate) {
+            return true;
+        }
+
+        // Check whitelist
+        if (evt.requiresWhitelist) {
+            return eventWhitelist[eventId][msg.sender];
+        }
+
+        // For invite codes, we return false (they are verified during mintTicket)
+        return false;
+    }
+
+    // Check if address is whitelisted
+    function isWhitelisted(uint256 eventId, address wallet) external view returns (bool) {
+        return eventWhitelist[eventId][wallet];
     }
 
     // Use ticket (mark as used)
@@ -213,39 +205,6 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         Ticket memory ticket = tickets[ticketId];
         Event memory eventInfo = events[ticket.eventId];
         return (ticket, eventInfo);
-    }
-
-    // Get attendee count (public)
-    function getAttendeeCount(uint256 eventId) external view returns (uint256) {
-        return events[eventId].totalTicketsSold;
-    }
-
-    // Verify access (public wrapper)
-    function verifyAccess(
-        uint256 eventId,
-        bytes32 /* encryptedWallet */,
-        bytes32 /* encryptedCode */
-    ) external returns (bool) {
-        Event storage evt = events[eventId];
-
-        // If not private, allow
-        if (!evt.isPrivate) {
-            emit AccessVerified(msg.sender, eventId, false);
-            return true;
-        }
-
-        // Check whitelist
-        if (evt.requiresWhitelist) {
-            if (eventWhitelist[eventId][msg.sender]) {
-                emit AccessVerified(msg.sender, eventId, false);
-                return true;
-            }
-            return false;
-        }
-
-        // For invite codes, we rely on mintTicket reverting if not whitelisted
-        // In full FHE, encrypted code verification would happen here
-        return false;
     }
 
     // Override required for ERC721

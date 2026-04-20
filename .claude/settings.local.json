@@ -26,7 +26,14 @@
       "Bash(curl -s http://localhost:3000/dashboard/create -o /dev/null -w \"Create: %{http_code}\\\\n\")",
       "Bash(curl -s http://localhost:3000/events/1)",
       "Bash(curl -L https://foundry.paradigm.xyz)",
-      "Bash(bash)"
+      "Bash(bash)",
+      "Bash(export PATH=\"$HOME/.foundry/bin:$PATH\")",
+      "Bash(foundryup)",
+      "Bash(forge install *)",
+      "Bash(forge build *)",
+      "Bash(cast wallet *)",
+      "Bash(cast balance *)",
+      "Bash(forge create *)"
     ]
   }
 }
