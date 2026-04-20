@@ -1,59 +1,14 @@
 "use client"
 
 import Link from "next/link"
-import { Calendar, MapPin, Users, Lock, Eye, EyeOff, MoreVertical, Edit, Trash2, Eye as ViewEvent, ChevronRight } from "lucide-react"
+import { Calendar, MapPin, Users, Lock, EyeOff, Edit, Eye as ViewEvent, Loader2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
-
-const events = [
-  {
-    id: 1,
-    name: "Web3 Privacy Summit",
-    status: "active",
-    date: "2024-06-15",
-    location: "San Francisco, CA",
-    attendees: 250,
-    maxAttendees: 500,
-    revenue: "12.5 ETH",
-    isPrivate: true
-  },
-  {
-    id: 2,
-    name: "Crypto Art Expo",
-    status: "upcoming",
-    date: "2024-07-20",
-    location: "New York, NY",
-    attendees: 180,
-    maxAttendees: 200,
-    revenue: "9.0 ETH",
-    isPrivate: true
-  },
-  {
-    id: 3,
-    name: "DeFi Innovation Conference",
-    status: "upcoming",
-    date: "2024-08-10",
-    location: "London, UK",
-    attendees: 0,
-    maxAttendees: 1000,
-    revenue: "0 ETH",
-    isPrivate: false
-  },
-  {
-    id: 4,
-    name: "Privacy Hackathon",
-    status: "draft",
-    date: "2024-09-01",
-    location: "Remote",
-    attendees: 0,
-    maxAttendees: 500,
-    revenue: "0 ETH",
-    isPrivate: false
-  }
-]
+import { useMyEvents } from "@/hooks/use-events"
 
 export default function EventsListPage() {
+  const { events, loading } = useMyEvents()
+
   return (
     <main className="min-h-screen bg-background grid-pattern">
       <Header />
@@ -84,15 +39,19 @@ export default function EventsListPage() {
 
           {/* Events Table */}
           <div className="bg-card rounded-3xl border border-border overflow-hidden boty-shadow">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="w-8 h-8 text-[#6366f1] animate-spin" />
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-secondary/50">
                   <tr>
                     <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Event</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Status</th>
                     <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Date</th>
                     <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Attendees</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Revenue</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Ticket Price</th>
                     <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Privacy</th>
                     <th className="text-right text-xs font-medium text-muted-foreground uppercase tracking-wider px-6 py-4">Actions</th>
                   </tr>
@@ -112,33 +71,19 @@ export default function EventsListPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-                          event.status === 'active' ? 'bg-green-500/10 text-green-500' :
-                          event.status === 'upcoming' ? 'bg-primary/10 text-primary' :
-                          'bg-muted text-muted-foreground'
-                        }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${
-                            event.status === 'active' ? 'bg-green-500' :
-                            event.status === 'upcoming' ? 'bg-primary' :
-                            'bg-muted-foreground'
-                          }`} />
-                          {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
                         <div className="flex items-center gap-1 text-muted-foreground text-sm">
                           <Calendar className="w-4 h-4" />
-                          {event.date}
+                          {new Date(Number(event.eventDate)).toLocaleDateString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Users className="w-4 h-4" />
-                          {event.attendees}/{event.maxAttendees}
+                          {event.totalTicketsSold}/{event.maxAttendees}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-primary font-medium">
-                        {event.revenue}
+                        {event.ticketPrice}
                       </td>
                       <td className="px-6 py-4">
                         {event.isPrivate ? (
@@ -163,19 +108,12 @@ export default function EventsListPage() {
                             <ViewEvent className="w-4 h-4" />
                           </Link>
                           <Link
-                            href={`/dashboard/create`}
+                            href={`/dashboard/events/${event.id}`}
                             className="p-2 text-muted-foreground hover:text-primary boty-transition rounded-lg hover:bg-secondary"
                             title="Edit Event"
                           >
                             <Edit className="w-4 h-4" />
                           </Link>
-                          <button
-                            type="button"
-                            className="p-2 text-muted-foreground hover:text-destructive boty-transition rounded-lg hover:bg-secondary"
-                            title="Delete Event"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -183,6 +121,7 @@ export default function EventsListPage() {
                 </tbody>
               </table>
             </div>
+            )}
 
             {events.length === 0 && (
               <div className="text-center py-20">

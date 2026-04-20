@@ -61,6 +61,7 @@ export default function EventsPage() {
   })
 
   useEffect(() => {
+    const node = gridRef.current
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -70,21 +71,25 @@ export default function EventsPage() {
       { threshold: 0.1 }
     )
 
-    if (gridRef.current) {
-      observer.observe(gridRef.current)
+    if (node) {
+      observer.observe(node)
     }
 
     return () => {
-      if (gridRef.current) {
-        observer.unobserve(gridRef.current)
+      if (node) {
+        observer.unobserve(node)
       }
     }
   }, [])
 
   useEffect(() => {
-    setIsVisible(false)
-    const timer = setTimeout(() => setIsVisible(true), 50)
-    return () => clearTimeout(timer)
+    const hideTimer = window.setTimeout(() => setIsVisible(false), 0)
+    const showTimer = window.setTimeout(() => setIsVisible(true), 50)
+
+    return () => {
+      window.clearTimeout(hideTimer)
+      window.clearTimeout(showTimer)
+    }
   }, [selectedCategory, selectedPrivacy])
 
   if (loading) {

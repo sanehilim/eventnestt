@@ -1,13 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Calendar, MapPin, Users, Ticket, Lock, EyeOff, Shield, ArrowLeft, ArrowRight, Check, AlertCircle, Key, Loader2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
-import { useAccount } from "wagmi"
 import { useRegisterForEvent, useEvents } from "@/hooks/use-events"
 
 const EVENT_IMAGES = [
@@ -31,7 +30,6 @@ export default function EventDetailPage() {
   const eventId = Number(params.id)
   const { events, loading } = useEvents()
   const { register, isConnected } = useRegisterForEvent()
-  const { address } = useAccount()
 
   const [accessCode, setAccessCode] = useState("")
   const [showAccessForm, setShowAccessForm] = useState(false)
@@ -296,7 +294,7 @@ export default function EventDetailPage() {
                     </div>
 
                     <p className="text-xs text-[#999999] text-center">
-                      Your access code is encrypted and verified on-chain using Fhenix.
+                      Your access code is verified by the event smart contract before minting.
                     </p>
                   </div>
                 ) : (

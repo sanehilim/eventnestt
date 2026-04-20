@@ -9,6 +9,7 @@ export function CTABanner() {
   const bannerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    const node = bannerRef.current
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -18,13 +19,13 @@ export function CTABanner() {
       { threshold: 0.1 }
     )
 
-    if (bannerRef.current) {
-      observer.observe(bannerRef.current)
+    if (node) {
+      observer.observe(node)
     }
 
     return () => {
-      if (bannerRef.current) {
-        observer.unobserve(bannerRef.current)
+      if (node) {
+        observer.unobserve(node)
       }
     }
   }, [])

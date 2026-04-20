@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Calendar, MapPin, Users, Ticket, EyeOff, Lock, ArrowRight } from "lucide-react"
+import { Calendar, MapPin, Users, Ticket, EyeOff, Lock, ArrowRight, Loader2 } from "lucide-react"
+import { useEvents, type Event } from "@/hooks/use-events"
 
 type EventCategory = "all" | "hackathon" | "conference" | "vip" | "workshop"
 
@@ -14,76 +15,27 @@ const categories = [
   { value: "vip" as EventCategory, label: "VIP" }
 ]
 
-// Showcase events for homepage display
-const SHOWCASE_EVENTS = [
-  {
-    id: 1,
-    name: "ETHGlobal Singapore",
-    description: "The largest Web3 hackathon in Asia with $500K+ in prizes",
-    eventDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000),
-    maxAttendees: 800,
-    isPrivate: false,
-    totalTicketsSold: 456,
-    ticketPrice: "0.05 ETH",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-    location: "Singapore",
-    category: "hackathon"
-  },
-  {
-    id: 2,
-    name: "ETH Denver 2026",
-    description: "Community-driven Ethereum conference with hands-on workshops",
-    eventDate: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000),
-    maxAttendees: 1500,
-    isPrivate: false,
-    totalTicketsSold: 892,
-    ticketPrice: "0.08 ETH",
-    image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
-    location: "Denver, Colorado",
-    category: "conference"
-  },
-  {
-    id: 3,
-    name: "ZK Proof Workshop",
-    description: "Deep dive into zero-knowledge proofs with expert practitioners",
-    eventDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    maxAttendees: 100,
-    isPrivate: true,
-    totalTicketsSold: 67,
-    ticketPrice: "Encrypted",
-    image: "https://images.unsplash.com/photo-1639762681485-074b7f938bd0?w=800&q=80",
-    location: "Lisbon, Portugal",
-    category: "vip"
-  },
-  {
-    id: 4,
-    name: "NFT NYC Summit",
-    description: "Premier NFT conference featuring leading artists and collectors",
-    eventDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    maxAttendees: 2000,
-    isPrivate: false,
-    totalTicketsSold: 1456,
-    ticketPrice: "0.1 ETH",
-    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-    location: "New York City",
-    category: "conference"
+function formatDate(timestamp: bigint): string {
+  try {
+    return new Date(Number(timestamp)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  } catch {
+    return "TBA"
   }
-]
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
 export function ShowcaseGrid() {
+  const { events, loading } = useEvents()
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("all")
   const [isVisible, setIsVisible] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
+  const showcaseEvents = events.slice(0, 4)
   const filteredEvents = selectedCategory === "all"
-    ? SHOWCASE_EVENTS
-    : SHOWCASE_EVENTS.filter(event => event.category === selectedCategory)
+    ? showcaseEvents
+    : showcaseEvents.filter(event => event.category === selectedCategory)
 
   useEffect(() => {
+    const node = gridRef.current
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -93,16 +45,28 @@ export function ShowcaseGrid() {
       { threshold: 0.1 }
     )
 
-    if (gridRef.current) {
-      observer.observe(gridRef.current)
+    if (node) {
+      observer.observe(node)
     }
 
     return () => {
-      if (gridRef.current) {
-        observer.unobserve(gridRef.current)
+      if (node) {
+        observer.unobserve(node)
       }
     }
   }, [])
+
+  if (loading) {
+    return (
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 text-[#6366f1] animate-spin" />
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className="py-24 bg-white">
@@ -152,6 +116,14 @@ export function ShowcaseGrid() {
           ref={gridRef}
           className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"
         >
+          {filteredEvents.length === 0 && (
+            <div className="sm:col-span-2 lg:col-span-4 rounded-3xl border border-[#e5e5e5] bg-[#f5f5f5] p-10 text-center">
+              <h3 className="text-2xl text-[#1a1a1a] mb-3">No live events yet</h3>
+              <p className="text-[#666666] max-w-md mx-auto">
+                Create your first on-chain event from the dashboard and it will appear here automatically.
+              </p>
+            </div>
+          )}
           {filteredEvents.map((event, index) => (
             <Link
               key={`showcase-${selectedCategory}-${event.id}`}

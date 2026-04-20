@@ -37,6 +37,7 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
     mapping(uint256 => Event) public events;
     mapping(uint256 => Ticket) public tickets;
     mapping(uint256 => address[]) public eventAttendees;
+    mapping(uint256 => address) public eventOrganizers;
 
     // Whitelist: eventId => wallet => isWhitelisted
     mapping(uint256 => mapping(address => bool)) public eventWhitelist;
@@ -44,15 +45,26 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
     mapping(uint256 => bytes32) public eventInviteCodes;
 
     // Events
-    event EventCreated(uint256 indexed eventId, string name, bool isPrivate);
+    event EventCreated(uint256 indexed eventId, address indexed organizer, string name, bool isPrivate);
     event TicketMinted(uint256 indexed ticketId, uint256 indexed eventId, address indexed holder);
     event AccessVerified(address indexed user, uint256 indexed eventId, bool isVIP);
+    event InviteCodeUpdated(uint256 indexed eventId);
+    event WhitelistUpdated(uint256 indexed eventId, address indexed wallet, bool isWhitelisted);
 
     constructor(address initialOwner)
         ERC721("EventNest Ticket", "ENFT")
         Ownable(initialOwner)
         EIP712("EventNestTicket", "1")
     {}
+
+    modifier onlyEventOrganizer(uint256 eventId) {
+        require(events[eventId].eventDate > 0, "Event does not exist");
+        require(
+            msg.sender == eventOrganizers[eventId] || msg.sender == owner(),
+            "Not organizer"
+        );
+        _;
+    }
 
     // Create a new event
     function createEvent(
@@ -66,6 +78,7 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         bool requiresWhitelist
     ) external returns (uint256) {
         uint256 eventId = _eventCounter++;
+        eventOrganizers[eventId] = msg.sender;
 
         events[eventId] = Event({
             name: name,
@@ -79,27 +92,32 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
             totalTicketsSold: 0
         });
 
-        emit EventCreated(eventId, name, isPrivate);
+        if (requiresWhitelist) {
+            eventWhitelist[eventId][msg.sender] = true;
+            emit WhitelistUpdated(eventId, msg.sender, true);
+        }
+
+        emit EventCreated(eventId, msg.sender, name, isPrivate);
         return eventId;
     }
 
-    // Set invite code for an event (organizer only)
-    function setInviteCode(uint256 eventId, bytes32 codeHash) external onlyOwner {
-        require(events[eventId].eventDate > 0, "Event does not exist");
+    // Set invite code for an event (event organizer only)
+    function setInviteCode(uint256 eventId, bytes32 codeHash) external onlyEventOrganizer(eventId) {
         eventInviteCodes[eventId] = codeHash;
+        emit InviteCodeUpdated(eventId);
     }
 
-    // Add to whitelist (organizer only)
-    function addToWhitelist(uint256 eventId, address wallet) external onlyOwner {
-        require(events[eventId].eventDate > 0, "Event does not exist");
+    // Add to whitelist (event organizer only)
+    function addToWhitelist(uint256 eventId, address wallet) external onlyEventOrganizer(eventId) {
         eventWhitelist[eventId][wallet] = true;
+        emit WhitelistUpdated(eventId, wallet, true);
     }
 
     // Batch add to whitelist
-    function batchAddToWhitelist(uint256 eventId, address[] calldata wallets) external onlyOwner {
-        require(events[eventId].eventDate > 0, "Event does not exist");
+    function batchAddToWhitelist(uint256 eventId, address[] calldata wallets) external onlyEventOrganizer(eventId) {
         for (uint i = 0; i < wallets.length; i++) {
             eventWhitelist[eventId][wallets[i]] = true;
+            emit WhitelistUpdated(eventId, wallets[i], true);
         }
     }
 
@@ -124,7 +142,7 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         uint256 eventId,
         address to,
         bool isVIP,
-        bytes32 /* encryptedProof - placeholder */
+        bytes32 accessProof
     ) external returns (uint256) {
         Event storage evt = events[eventId];
         require(evt.eventDate > 0, "Event does not exist");
@@ -132,7 +150,7 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
 
         // For private events, verify access
         if (evt.isPrivate) {
-            require(_verifyAccess(eventId, msg.sender), "Access denied");
+            require(_verifyAccess(eventId, msg.sender, accessProof), "Access denied");
         }
 
         uint256 ticketId = _ticketCounter++;
@@ -152,26 +170,29 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
     }
 
     // Internal access verification
-    function _verifyAccess(uint256 eventId, address user) internal view returns (bool) {
+    function _verifyAccess(uint256 eventId, address user, bytes32 accessProof) internal view returns (bool) {
         Event storage evt = events[eventId];
+        bool whitelistOk = !evt.requiresWhitelist;
+        bool inviteOk = !evt.requiresInviteCode;
 
-        // Check whitelist first if required
         if (evt.requiresWhitelist) {
-            if (eventWhitelist[eventId][user]) {
-                return true;
-            }
+            whitelistOk = eventWhitelist[eventId][user];
         }
 
-        // For non-whitelist private events, check if user already has a ticket
-        // In full implementation, invite code verification would happen off-chain or via ZK proof
-        return false;
+        if (evt.requiresInviteCode) {
+            inviteOk =
+                eventInviteCodes[eventId] != bytes32(0) &&
+                eventInviteCodes[eventId] == accessProof;
+        }
+
+        return whitelistOk && inviteOk;
     }
 
     // Verify access (public view function)
     function verifyAccess(
         uint256 eventId,
         bytes32 /* encryptedWallet */,
-        bytes32 /* encryptedCode */
+        bytes32 accessProof
     ) external view returns (bool) {
         Event storage evt = events[eventId];
 
@@ -180,18 +201,17 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
             return true;
         }
 
-        // Check whitelist
-        if (evt.requiresWhitelist) {
-            return eventWhitelist[eventId][msg.sender];
-        }
-
-        // For invite codes, we return false (they are verified during mintTicket)
-        return false;
+        return _verifyAccess(eventId, msg.sender, accessProof);
     }
 
     // Check if address is whitelisted
     function isWhitelisted(uint256 eventId, address wallet) external view returns (bool) {
         return eventWhitelist[eventId][wallet];
+    }
+
+    function getEventOrganizer(uint256 eventId) external view returns (address) {
+        require(events[eventId].eventDate > 0, "Event does not exist");
+        return eventOrganizers[eventId];
     }
 
     // Use ticket (mark as used)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff } from "lucide-react"
 import { Header } from "@/components/boty/header"
@@ -8,6 +8,7 @@ import { Footer } from "@/components/boty/footer"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { useAccount } from "wagmi"
 import { useCreateEvent } from "@/hooks/use-events"
+import { readDashboardSettings } from "@/lib/dashboard-settings"
 
 const steps = [
   { id: 1, name: "Basic Info", icon: Calendar },
@@ -21,6 +22,8 @@ export default function CreateEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [txHash, setTxHash] = useState<string>("")
+  const [generatedInviteCode, setGeneratedInviteCode] = useState("")
+  const [submitError, setSubmitError] = useState("")
   const { isConnected, address } = useAccount()
   const { createEvent } = useCreateEvent()
 
@@ -38,25 +41,52 @@ export default function CreateEventPage() {
     earlyBirdDiscount: ""
   })
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const settings = readDashboardSettings(address)
+      setFormData((current) => ({
+        ...current,
+        isPrivate: settings.defaultPrivate,
+        requiresInviteCode: settings.requireInviteCode,
+        requiresWhitelist: settings.requireWhitelist,
+      }))
+    }, 0)
+
+    return () => window.clearTimeout(timer)
+  }, [address])
+
   const handleSubmit = async () => {
+    const eventTimestamp = new Date(formData.date).getTime()
+    if (!formData.name.trim() || !formData.date || Number.isNaN(eventTimestamp)) {
+      return
+    }
+
+    setSubmitError("")
     setIsSubmitting(true)
     try {
+      const inviteCode = formData.requiresInviteCode
+        ? `EVENT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+        : undefined
+
       const { hash } = await createEvent({
         name: formData.name,
         description: formData.description,
-        eventDate: BigInt(new Date(formData.date).getTime()),
+        eventDate: BigInt(eventTimestamp),
         maxAttendees: formData.maxAttendees,
         isPrivate: formData.isPrivate,
         requiresInviteCode: formData.requiresInviteCode,
         requiresWhitelist: formData.requiresWhitelist,
         ticketPrice: formData.ticketPrice,
         location: formData.location,
-        category: formData.category
+        category: formData.category,
+        inviteCode,
       })
       setTxHash(hash)
+      setGeneratedInviteCode(inviteCode || "")
       setIsComplete(true)
     } catch (err) {
       console.error(err)
+      setSubmitError(err instanceof Error ? err.message : "Failed to create event.")
     } finally {
       setIsSubmitting(false)
     }
@@ -73,30 +103,35 @@ export default function CreateEventPage() {
             </div>
             <h1 className="text-4xl md:text-5xl text-[#1a1a1a] mb-4">Event Created!</h1>
             <p className="text-lg text-[#666666] mb-4">
-              Your event has been deployed to the blockchain with encrypted privacy settings.
+              Your event has been deployed on-chain and is ready to accept registrations.
             </p>
             {txHash && (
               <p className="text-sm text-[#666666] mb-8 font-mono bg-[#f5f5f5] p-2 rounded-lg">
                 TX: {txHash.slice(0, 10)}...{txHash.slice(-8)}
               </p>
             )}
+            {generatedInviteCode && (
+              <p className="text-sm text-[#1a1a1a] mb-8 bg-[#fff7ed] border border-[#fed7aa] p-3 rounded-lg">
+                Invite code: <span className="font-mono">{generatedInviteCode}</span>
+              </p>
+            )}
             <div className="bg-[#f5f5f5] rounded-2xl p-6 border border-[#e5e5e5] mb-8 text-left">
               <div className="flex items-center gap-2 mb-4">
                 <Shield className="w-5 h-5 text-[#6366f1]" />
-                <span className="font-medium text-[#1a1a1a]">Privacy Summary</span>
+                <span className="font-medium text-[#1a1a1a]">Access Summary</span>
               </div>
               <ul className="space-y-2 text-sm text-[#666666]">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
-                  Access conditions encrypted on Fhenix
+                  Event deployed successfully on Ethereum Sepolia
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
-                  Pricing logic hidden from public view
+                  Wallet registration is connected to the smart contract
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
-                  Attendee list remains private
+                  Organizer access controls are stored on-chain
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
@@ -144,7 +179,7 @@ export default function CreateEventPage() {
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl text-[#1a1a1a] mb-4">Create Event</h1>
             <p className="text-lg text-[#666666]">
-              Set up your event with privacy-first settings powered by Fhenix
+              Set up your event with organizer-controlled on-chain access settings
             </p>
           </div>
 
@@ -263,7 +298,7 @@ export default function CreateEventPage() {
               <div className="space-y-6">
                 <h2 className="text-2xl text-[#1a1a1a] mb-2">Privacy Settings</h2>
                 <p className="text-[#666666] mb-6">
-                  Choose how private your event access controls should be. All settings are encrypted on-chain via Fhenix.
+                  Choose how private your event access controls should be. These rules are enforced by your deployed smart contract.
                 </p>
 
                 <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5]">
@@ -315,10 +350,10 @@ export default function CreateEventPage() {
                 <div className="bg-[#6366f1]/10 rounded-2xl p-6 border border-[#6366f1]/20">
                   <div className="flex items-center gap-3 mb-2">
                     <Shield className="w-5 h-5 text-[#6366f1]" />
-                    <span className="font-medium text-[#6366f1]">Fhenix Privacy</span>
+                    <span className="font-medium text-[#6366f1]">On-Chain Access Rules</span>
                   </div>
                   <p className="text-sm text-[#666666]">
-                    All your privacy settings are encrypted and stored on-chain. No one can see your invite codes, whitelist, or access conditions.
+                    Your access settings are stored on-chain and enforced when attendees register.
                   </p>
                 </div>
               </div>
@@ -425,7 +460,7 @@ export default function CreateEventPage() {
                         <button
                           type="button"
                           onClick={handleSubmit}
-                          disabled={isSubmitting || !formData.name}
+                          disabled={isSubmitting || !formData.name.trim() || !formData.date}
                           className="w-full bg-[#6366f1] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#5558e3] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                           {isSubmitting ? (
@@ -443,6 +478,10 @@ export default function CreateEventPage() {
                     </div>
                   )}
                 </ConnectButton.Custom>
+
+                {submitError && (
+                  <p className="text-sm text-[#ef4444] mt-4 text-center">{submitError}</p>
+                )}
               </div>
             )}
 

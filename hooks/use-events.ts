@@ -1,12 +1,23 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useAccount, useWriteContract, useReadContract } from "wagmi"
-import { http, createPublicClient, parseEventLogs, waitForTransactionReceipt } from "viem"
-import { sepolia } from "wagmi/chains"
+import { useAccount, useReadContract, useWriteContract } from "wagmi"
+import { createPublicClient, http, parseEventLogs } from "viem"
 import { abi } from "@/contracts/abi"
+import {
+  APP_CHAIN,
+  APP_RPC_URL,
+  ZERO_HASH,
+  decodeEventMetadata,
+  encodeEventMetadata,
+  hashSecret,
+} from "@/lib/onchain"
 
-const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`
+const CONTRACT_ADDRESS = (
+  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000"
+) as `0x${string}`
+
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"
 
 export interface Event {
   id: number
@@ -22,6 +33,7 @@ export interface Event {
   image: string
   location: string
   category: string
+  organizer?: string
 }
 
 export interface Ticket {
@@ -32,147 +44,27 @@ export interface Ticket {
   used: boolean
 }
 
-const DEMO_EVENTS: Event[] = [
-  {
-    id: 1,
-    name: "ETHGlobal Singapore",
-    description: "The largest Web3 hackathon in Asia with $500K+ in prizes. Join 800+ builders for 48 hours of coding, networking, and innovation.",
-    eventDate: BigInt(Date.now() + 45 * 24 * 60 * 60 * 1000),
-    maxAttendees: 800,
-    isPrivate: false,
-    requiresInviteCode: false,
-    requiresWhitelist: false,
-    totalTicketsSold: 456,
-    ticketPrice: "0.05 ETH",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-    location: "Singapore",
-    category: "hackathon"
-  },
-  {
-    id: 2,
-    name: "ETH Denver 2026",
-    description: "Community-driven Ethereum conference with hands-on workshops and networking opportunities.",
-    eventDate: BigInt(Date.now() + 60 * 24 * 60 * 60 * 1000),
-    maxAttendees: 1500,
-    isPrivate: false,
-    requiresInviteCode: false,
-    requiresWhitelist: false,
-    totalTicketsSold: 892,
-    ticketPrice: "0.08 ETH",
-    image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
-    location: "Denver, Colorado",
-    category: "conference"
-  },
-  {
-    id: 3,
-    name: "ZK Proof Workshop",
-    description: "Deep dive into zero-knowledge proofs with expert practitioners. Limited spots available.",
-    eventDate: BigInt(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    maxAttendees: 100,
-    isPrivate: true,
-    requiresInviteCode: true,
-    requiresWhitelist: false,
-    totalTicketsSold: 67,
-    ticketPrice: "Encrypted",
-    image: "https://images.unsplash.com/photo-1639762681485-074b7f938bd0?w=800&q=80",
-    location: "Lisbon, Portugal",
-    category: "vip"
-  },
-  {
-    id: 4,
-    name: "NFT NYC Summit",
-    description: "Premier NFT conference featuring leading artists and collectors from around the world.",
-    eventDate: BigInt(Date.now() + 90 * 24 * 60 * 60 * 1000),
-    maxAttendees: 2000,
-    isPrivate: false,
-    requiresInviteCode: false,
-    requiresWhitelist: false,
-    totalTicketsSold: 1456,
-    ticketPrice: "0.1 ETH",
-    image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-    location: "New York City",
-    category: "conference"
-  },
-  {
-    id: 5,
-    name: "DeFi Innovation Day",
-    description: "Explore the latest in decentralized finance with live demos and panel discussions.",
-    eventDate: BigInt(Date.now() + 35 * 24 * 60 * 60 * 1000),
-    maxAttendees: 300,
-    isPrivate: false,
-    requiresInviteCode: false,
-    requiresWhitelist: false,
-    totalTicketsSold: 198,
-    ticketPrice: "0.03 ETH",
-    image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
-    location: "London, UK",
-    category: "conference"
-  },
-  {
-    id: 6,
-    name: "Layer 2 Workshop",
-    description: "Hands-on workshop covering Optimism, Arbitrum, and zkSync development.",
-    eventDate: BigInt(Date.now() + 20 * 24 * 60 * 60 * 1000),
-    maxAttendees: 150,
-    isPrivate: false,
-    requiresInviteCode: false,
-    requiresWhitelist: false,
-    totalTicketsSold: 89,
-    ticketPrice: "Free",
-    image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80",
-    location: "Berlin, Germany",
-    category: "workshop"
-  },
-  {
-    id: 7,
-    name: "DAO Governance Summit",
-    description: "Discuss the future of decentralized governance with DAO leaders.",
-    eventDate: BigInt(Date.now() + 75 * 24 * 60 * 60 * 1000),
-    maxAttendees: 500,
-    isPrivate: true,
-    requiresInviteCode: true,
-    requiresWhitelist: true,
-    totalTicketsSold: 234,
-    ticketPrice: "Whitelist Only",
-    image: "https://images.unsplash.com/photo-1639762681485-074b7f938bd0?w=800&q=80",
-    location: "Dubai, UAE",
-    category: "vip"
-  },
-  {
-    id: 8,
-    name: "Solidity Bootcamp",
-    description: "Intensive 3-day bootcamp for learning smart contract development.",
-    eventDate: BigInt(Date.now() + 40 * 24 * 60 * 60 * 1000),
-    maxAttendees: 50,
-    isPrivate: false,
-    requiresInviteCode: false,
-    requiresWhitelist: false,
-    totalTicketsSold: 42,
-    ticketPrice: "0.15 ETH",
-    image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
-    location: "Remote",
-    category: "workshop"
-  }
-]
-
 const isContractDeployed = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000"
 
-// Module-level public client for async use
 const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http("https://ethereum-sepolia.publicnode.com"),
+  chain: APP_CHAIN,
+  transport: http(APP_RPC_URL),
 })
 
-function contractEventToEvent(id: number, raw: {
+type ContractEvent = {
   name: string
   description: string
+  metadataURI: string
   eventDate: bigint
   maxAttendees: bigint
   isPrivate: boolean
   requiresInviteCode: boolean
   requiresWhitelist: boolean
   totalTicketsSold: bigint
-}): Event {
+}
+
+function contractEventToEvent(id: number, raw: ContractEvent, organizer?: string): Event {
+  const metadata = decodeEventMetadata(raw.metadataURI)
   return {
     id,
     name: raw.name,
@@ -183,11 +75,16 @@ function contractEventToEvent(id: number, raw: {
     requiresInviteCode: raw.requiresInviteCode,
     requiresWhitelist: raw.requiresWhitelist,
     totalTicketsSold: Number(raw.totalTicketsSold),
-    ticketPrice: "0 ETH",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-    location: "TBD",
-    category: "conference"
+    ticketPrice: metadata.ticketPrice || "Free",
+    image: metadata.image || DEFAULT_IMAGE,
+    location: metadata.location || "TBD",
+    category: metadata.category || "conference",
+    organizer,
   }
+}
+
+async function waitForReceipt(hash: `0x${string}`) {
+  return publicClient.waitForTransactionReceipt({ hash })
 }
 
 export function useEvents() {
@@ -199,7 +96,7 @@ export function useEvents() {
     address: CONTRACT_ADDRESS,
     abi,
     functionName: "getEventCount",
-    query: { enabled: isContractDeployed }
+    query: { enabled: isContractDeployed },
   })
 
   const fetchEvents = useCallback(async () => {
@@ -211,34 +108,44 @@ export function useEvents() {
         const fetched: Event[] = []
         for (let i = 0; i < Number(eventCount); i++) {
           try {
-            const raw = await publicClient.readContract({
-              address: CONTRACT_ADDRESS,
-              abi,
-              functionName: "getEvent",
-              args: [BigInt(i)]
-            })
-            if (raw) {
-              fetched.push(contractEventToEvent(i, raw as Parameters<typeof contractEventToEvent>[1]))
-            }
+            const [raw, organizer] = await Promise.all([
+              publicClient.readContract({
+                address: CONTRACT_ADDRESS,
+                abi,
+                functionName: "getEvent",
+                args: [BigInt(i)],
+              }) as Promise<ContractEvent>,
+              publicClient.readContract({
+                address: CONTRACT_ADDRESS,
+                abi,
+                functionName: "getEventOrganizer",
+                args: [BigInt(i)],
+              }) as Promise<`0x${string}`>,
+            ])
+            fetched.push(contractEventToEvent(i, raw, organizer))
           } catch {
-            // skip missing events
+            // Skip events that cannot be read.
           }
         }
-        setEvents(fetched.length > 0 ? fetched : DEMO_EVENTS)
+        setEvents(fetched)
       } else {
-        setEvents(DEMO_EVENTS)
+        setEvents([])
       }
     } catch (err) {
       console.error("Error fetching events:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch events")
-      setEvents(DEMO_EVENTS)
+      setEvents([])
     } finally {
       setLoading(false)
     }
   }, [eventCount])
 
   useEffect(() => {
-    fetchEvents()
+    const run = async () => {
+      await fetchEvents()
+    }
+
+    void run()
   }, [fetchEvents])
 
   return { events, loading, error, refetch: fetchEvents }
@@ -246,7 +153,7 @@ export function useEvents() {
 
 export function useEvent(eventId: number) {
   const { events, loading, error } = useEvents()
-  const event = events.find(e => e.id === eventId)
+  const event = events.find((entry) => entry.id === eventId)
   return { event, loading, error }
 }
 
@@ -256,27 +163,56 @@ export function useMyTickets() {
   const [loading, setLoading] = useState(false)
 
   const fetchTickets = useCallback(async () => {
-    if (!isConnected || !address) {
+    if (!isConnected || !address || !isContractDeployed) {
       setTickets([])
       return
     }
 
     setLoading(true)
     try {
-      if (isContractDeployed) {
-        setTickets([])
-      } else {
-        setTickets([])
-      }
+      const logs = await publicClient.getLogs({
+        address: CONTRACT_ADDRESS,
+        event: abi.find((entry) => entry.type === "event" && entry.name === "TicketMinted")!,
+        args: { holder: address },
+        fromBlock: 0n,
+      })
+
+      const fetchedTickets = await Promise.all(
+        logs.map(async (log) => {
+          const ticketId = Number(log.args.ticketId)
+          const holder = log.args.holder as string
+          const ticketInfo = (await publicClient.readContract({
+            address: CONTRACT_ADDRESS,
+            abi,
+            functionName: "getTicket",
+            args: [BigInt(ticketId)],
+          })) as [{ eventId: bigint; isVIP: boolean; used: boolean }, ContractEvent]
+
+          return {
+            id: ticketId,
+            eventId: Number(ticketInfo[0].eventId),
+            holder,
+            isVIP: ticketInfo[0].isVIP,
+            used: ticketInfo[0].used,
+          } satisfies Ticket
+        }),
+      )
+
+      setTickets(fetchedTickets)
     } catch (err) {
       console.error("Error fetching tickets:", err)
+      setTickets([])
     } finally {
       setLoading(false)
     }
   }, [address, isConnected])
 
   useEffect(() => {
-    fetchTickets()
+    const run = async () => {
+      await fetchTickets()
+    }
+
+    void run()
   }, [fetchTickets])
 
   return { tickets, loading, refetch: fetchTickets }
@@ -297,19 +233,23 @@ export function useCreateEvent() {
     ticketPrice: string
     location: string
     category: string
-    metadataURI?: string
-  }): Promise<{ hash: `0x${string}`; eventId: bigint }> => {
+    image?: string
+    inviteCode?: string
+  }): Promise<{ eventId: bigint; hash: `0x${string}`; inviteCode?: string }> => {
     if (!isConnected || !address) {
       throw new Error("Wallet not connected")
     }
 
     if (!isContractDeployed) {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      return {
-        hash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("") as `0x${string}`,
-        eventId: BigInt(Date.now())
-      }
+      throw new Error("Contract address is not configured")
     }
+
+    const metadataURI = encodeEventMetadata({
+      category: params.category,
+      image: params.image,
+      location: params.location,
+      ticketPrice: params.ticketPrice || "Free",
+    })
 
     const hash = await writeContractAsync({
       address: CONTRACT_ADDRESS,
@@ -318,38 +258,35 @@ export function useCreateEvent() {
       args: [
         params.name,
         params.description,
-        params.metadataURI || "",
+        metadataURI,
         params.eventDate,
         BigInt(params.maxAttendees),
         params.isPrivate,
         params.requiresInviteCode,
-        params.requiresWhitelist
-      ]
+        params.requiresWhitelist,
+      ],
     })
 
-    const receipt = await waitForTransactionReceipt(publicClient, { hash })
+    const receipt = await waitForReceipt(hash)
+    const parsedLogs = parseEventLogs({
+      abi,
+      logs: receipt.logs,
+    })
 
-    let eventId = 0n
-    for (const log of receipt.logs) {
-      try {
-        const parsedLogs = parseEventLogs({
-          abi,
-          data: log.data,
-          topics: log.topics
-        })
-        for (const parsed of parsedLogs) {
-          if (parsed?.eventName === "EventCreated") {
-            eventId = parsed.args.eventId as bigint
-            break
-          }
-        }
-        if (eventId) break
-      } catch {
-        // skip non-matching logs
-      }
+    const createdEvent = parsedLogs.find((entry) => entry.eventName === "EventCreated")
+    const eventId = (createdEvent?.args.eventId as bigint | undefined) ?? 0n
+
+    if (eventId > 0n && params.requiresInviteCode && params.inviteCode) {
+      const inviteHash = await writeContractAsync({
+        address: CONTRACT_ADDRESS,
+        abi,
+        functionName: "setInviteCode",
+        args: [eventId, hashSecret(params.inviteCode)],
+      })
+      await waitForReceipt(inviteHash)
     }
 
-    return { hash, eventId }
+    return { hash, eventId, inviteCode: params.inviteCode }
   }
 
   return { createEvent, isConnected, address }
@@ -359,53 +296,33 @@ export function useRegisterForEvent() {
   const { address, isConnected } = useAccount()
   const { writeContractAsync } = useWriteContract()
 
-  const register = async (eventId: number, _accessCode?: string): Promise<{ hash: `0x${string}`; ticketId: bigint }> => {
+  const register = async (
+    eventId: number,
+    accessCode?: string,
+  ): Promise<{ hash: `0x${string}`; ticketId: bigint }> => {
     if (!isConnected || !address) {
       throw new Error("Wallet not connected")
     }
 
     if (!isContractDeployed) {
-      await new Promise((resolve, reject) => setTimeout(() => {
-        if (_accessCode === "INVALID") {
-          reject(new Error("Invalid access code"))
-        } else {
-          resolve(true)
-        }
-      }, 2000))
-      return {
-        hash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("") as `0x${string}`,
-        ticketId: BigInt(Date.now())
-      }
+      throw new Error("Contract address is not configured")
     }
 
     const hash = await writeContractAsync({
       address: CONTRACT_ADDRESS,
       abi,
       functionName: "mintTicket",
-      args: [BigInt(eventId), address, false, "0x0000000000000000000000000000000000000000000000000000000000000000"]
+      args: [BigInt(eventId), address, false, accessCode ? hashSecret(accessCode) : ZERO_HASH],
     })
 
-    const receipt = await waitForTransactionReceipt(publicClient, { hash })
+    const receipt = await waitForReceipt(hash)
+    const parsedLogs = parseEventLogs({
+      abi,
+      logs: receipt.logs,
+    })
 
-    let ticketId = 0n
-    for (const log of receipt.logs) {
-      try {
-        const parsedLogs = parseEventLogs({
-          abi,
-          data: log.data,
-          topics: log.topics
-        })
-        for (const parsed of parsedLogs) {
-          if (parsed?.eventName === "TicketMinted") {
-            ticketId = parsed.args.ticketId as bigint
-            break
-          }
-        }
-        if (ticketId) break
-      } catch {
-        // skip non-matching logs
-      }
-    }
+    const mintedTicket = parsedLogs.find((entry) => entry.eventName === "TicketMinted")
+    const ticketId = (mintedTicket?.args.ticketId as bigint | undefined) ?? 0n
 
     return { hash, ticketId }
   }
@@ -426,21 +343,99 @@ export function useMyEvents() {
 
     setLoading(true)
     try {
-      if (isContractDeployed) {
+      if (!isContractDeployed) {
         setEvents([])
-      } else {
-        setEvents(DEMO_EVENTS.slice(0, 3).map(e => ({...e, name: `My ${e.name}`})))
+        return
       }
+
+      const eventCount = (await publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi,
+        functionName: "getEventCount",
+      })) as bigint
+
+      const fetched: Event[] = []
+      for (let i = 0; i < Number(eventCount); i++) {
+        try {
+          const organizer = (await publicClient.readContract({
+            address: CONTRACT_ADDRESS,
+            abi,
+            functionName: "getEventOrganizer",
+            args: [BigInt(i)],
+          })) as string
+
+          if (organizer.toLowerCase() !== address.toLowerCase()) {
+            continue
+          }
+
+          const raw = (await publicClient.readContract({
+            address: CONTRACT_ADDRESS,
+            abi,
+            functionName: "getEvent",
+            args: [BigInt(i)],
+          })) as ContractEvent
+
+          fetched.push(contractEventToEvent(i, raw, organizer))
+        } catch {
+          // Skip events that cannot be read.
+        }
+      }
+
+      setEvents(fetched)
     } catch (err) {
       console.error("Error fetching my events:", err)
+      setEvents([])
     } finally {
       setLoading(false)
     }
   }, [address, isConnected])
 
   useEffect(() => {
-    fetchMyEvents()
+    const run = async () => {
+      await fetchMyEvents()
+    }
+
+    void run()
   }, [fetchMyEvents])
 
   return { events, loading, refetch: fetchMyEvents }
+}
+
+export function useManageEventAccess() {
+  const { isConnected } = useAccount()
+  const { writeContractAsync } = useWriteContract()
+
+  const updateInviteCode = async (eventId: number, inviteCode: string) => {
+    if (!isConnected) {
+      throw new Error("Wallet not connected")
+    }
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "setInviteCode",
+      args: [BigInt(eventId), hashSecret(inviteCode)],
+    })
+
+    await waitForReceipt(hash)
+    return hash
+  }
+
+  const addWhitelist = async (eventId: number, wallets: `0x${string}`[]) => {
+    if (!isConnected) {
+      throw new Error("Wallet not connected")
+    }
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: wallets.length === 1 ? "addToWhitelist" : "batchAddToWhitelist",
+      args: wallets.length === 1 ? [BigInt(eventId), wallets[0]] : [BigInt(eventId), wallets],
+    })
+
+    await waitForReceipt(hash)
+    return hash
+  }
+
+  return { addWhitelist, updateInviteCode }
 }

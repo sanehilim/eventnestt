@@ -3,24 +3,25 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { WagmiProvider, createConfig, http } from "wagmi"
 import { RainbowKitProvider, lightTheme } from "@rainbow-me/rainbowkit"
-import { mainnet, sepolia } from "wagmi/chains"
 import { injected, metaMask, coinbaseWallet, walletConnect } from "wagmi/connectors"
+import { APP_CHAIN, APP_RPC_URL } from "@/lib/onchain"
 
 import "@rainbow-me/rainbowkit/styles.css"
 
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "your-project-id"
+const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim()
+
+const connectors = [
+  injected(),
+  metaMask(),
+  coinbaseWallet({ appName: "EventNest" }),
+  ...(projectId ? [walletConnect({ projectId })] : []),
+]
 
 const wagmiConfig = createConfig({
-  chains: [sepolia, mainnet],
-  connectors: [
-    injected(),
-    metaMask(),
-    coinbaseWallet({ appName: "EventNest" }),
-    walletConnect({ projectId }),
-  ],
+  chains: [APP_CHAIN],
+  connectors,
   transports: {
-    [sepolia.id]: http("https://ethereum-sepolia.publicnode.com"),
-    [mainnet.id]: http("https://ethereum.publicnode.com"),
+    [APP_CHAIN.id]: http(APP_RPC_URL),
   },
 })
 

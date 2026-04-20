@@ -60,6 +60,7 @@ export function EventGrid() {
   }
 
   useEffect(() => {
+    const node = gridRef.current
     const gridObserver = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -69,13 +70,13 @@ export function EventGrid() {
       { threshold: 0.1 }
     )
 
-    if (gridRef.current) {
-      gridObserver.observe(gridRef.current)
+    if (node) {
+      gridObserver.observe(node)
     }
 
     return () => {
-      if (gridRef.current) {
-        gridObserver.unobserve(gridRef.current)
+      if (node) {
+        gridObserver.unobserve(node)
       }
     }
   }, [])
