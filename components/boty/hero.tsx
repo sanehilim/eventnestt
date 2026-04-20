@@ -6,14 +6,18 @@ import { ArrowRight, Shield } from "lucide-react"
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-[#f5f5f5]">
-      {/* Background Image */}
+      {/* Background Video */}
       <div className="absolute inset-0">
-        <img
-          src="/image.png"
-          alt="EventNest Background"
-          className="w-full h-full object-cover opacity-30"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#ffffff] via-[#ffffff]/80 to-transparent" />
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover opacity-40"
+        >
+          <source src="/hero-video.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/70 to-transparent" />
       </div>
 
       {/* Content */}
