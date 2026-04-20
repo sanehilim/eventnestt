@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Shield, Mail, ArrowRight, Lock } from "lucide-react"
+import { Shield, Mail, ArrowRight } from "lucide-react"
 
 export function Newsletter() {
   const [email, setEmail] = useState("")
@@ -17,35 +17,35 @@ export function Newsletter() {
   }
 
   return (
-    <section className="py-24 bg-card border-t border-border">
+    <section className="py-24 bg-[#f5f5f5] border-t border-[#e5e5e5]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
-            <Lock className="w-8 h-8 text-primary" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#6366f1]/10 mb-6">
+            <Lock className="w-8 h-8 text-[#6366f1]" />
           </div>
-          <h2 className="font-serif text-4xl md:text-5xl text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl text-[#1a1a1a] mb-4">
             Stay Updated
           </h2>
-          <p className="text-lg text-muted-foreground mb-10">
+          <p className="text-lg text-[#666666] mb-10">
             Get the latest on privacy-first event ticketing, Fhenix updates, and exclusive event invites.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
             <div className="flex-1 relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#666666]" />
               <input
                 type="email"
                 placeholder="your@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-secondary border border-border rounded-full px-12 py-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 boty-transition"
+                className="w-full bg-white border border-[#e5e5e5] rounded-full px-12 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
               />
             </div>
             <button
               type="submit"
               disabled={status === "loading"}
-              className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary disabled:opacity-50 flex items-center justify-center gap-2"
+              className="bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#333] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {status === "loading" ? (
                 <span className="animate-spin">
@@ -69,12 +69,12 @@ export function Newsletter() {
           </form>
 
           {status === "success" && (
-            <p className="text-sm text-primary mt-4">
+            <p className="text-sm text-[#6366f1] mt-4">
               You are subscribed. Welcome to the privacy-first community.
             </p>
           )}
 
-          <p className="text-xs text-muted-foreground mt-6">
+          <p className="text-xs text-[#999999] mt-6">
             Your email stays private. We never share or sell your data.
           </p>
         </div>
