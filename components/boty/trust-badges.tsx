@@ -52,7 +52,7 @@ export function TrustBadges() {
   }, [])
 
   return (
-    <section className="py-20 bg-card border-y border-border">
+    <section className="py-20 bg-[#f5f5f5] border-y border-[#e5e5e5]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div
           ref={sectionRef}
@@ -61,16 +61,16 @@ export function TrustBadges() {
           {badges.map((badge, index) => (
             <div
               key={badge.title}
-              className={`bg-secondary p-6 lg:p-8 text-center rounded-xl border border-border transition-all duration-700 ease-out ${
+              className={`bg-white p-6 lg:p-8 text-center rounded-xl border border-[#e5e5e5] transition-all duration-700 ease-out ${
                 isVisible
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-8'
               }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
-              <badge.icon className="text-primary mb-4 mx-auto size-12" strokeWidth={1} />
-              <h3 className="font-serif text-foreground mb-2 text-2xl">{badge.title}</h3>
-              <p className="text-sm text-muted-foreground">{badge.description}</p>
+              <badge.icon className="text-[#6366f1] mb-4 mx-auto size-12" strokeWidth={1} />
+              <h3 className="text-2xl text-[#1a1a1a] mb-2">{badge.title}</h3>
+              <p className="text-sm text-[#666666]">{badge.description}</p>
             </div>
           ))}
         </div>

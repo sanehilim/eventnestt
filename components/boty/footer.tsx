@@ -32,10 +32,10 @@ const footerLinks = {
 
 export function Footer() {
   return (
-    <footer className="bg-card pt-20 pb-10 relative overflow-hidden border-t border-border">
+    <footer className="bg-white pt-20 pb-10 relative overflow-hidden border-t border-[#e5e5e5]">
       {/* Giant Background Text */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 pointer-events-none select-none z-0">
-        <span className="text-[200px] sm:text-[200px] md:text-[400px] lg:text-[400px] xl:text-[400px] font-bold text-foreground/5 whitespace-nowrap leading-none">
+        <span className="text-[200px] sm:text-[200px] md:text-[400px] lg:text-[400px] xl:text-[400px] font-bold text-[#f5f5f5] whitespace-nowrap leading-none">
           EventNest
         </span>
       </div>
@@ -44,10 +44,10 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <h2 className="text-3xl text-foreground mb-4">
-              <span className="gradient-text font-semibold">Event</span>Nest
+            <h2 className="text-3xl text-[#1a1a1a] mb-4 font-semibold">
+              <span className="gradient-text">Event</span>Nest
             </h2>
-            <p className="text-sm text-muted-foreground leading-relaxed mb-6">
+            <p className="text-sm text-[#666666] leading-relaxed mb-6">
               Privacy-first decentralized event ticketing powered by Fhenix Fully Homomorphic Encryption.
             </p>
             <div className="flex gap-4">
@@ -55,7 +55,7 @@ export function Footer() {
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition boty-shadow"
+                className="w-10 h-10 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#666666] hover:text-[#1a1a1a] boty-transition boty-shadow"
                 aria-label="Twitter"
               >
                 <Twitter className="w-4 h-4" />
@@ -64,7 +64,7 @@ export function Footer() {
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition boty-shadow"
+                className="w-10 h-10 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#666666] hover:text-[#1a1a1a] boty-transition boty-shadow"
                 aria-label="GitHub"
               >
                 <Github className="w-4 h-4" />
@@ -73,7 +73,7 @@ export function Footer() {
                 href="#"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-background flex items-center justify-center text-foreground/60 hover:text-foreground boty-transition boty-shadow"
+                className="w-10 h-10 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#666666] hover:text-[#1a1a1a] boty-transition boty-shadow"
                 aria-label="Instagram"
               >
                 <Instagram className="w-4 h-4" />
@@ -83,13 +83,13 @@ export function Footer() {
 
           {/* Events Links */}
           <div>
-            <h3 className="font-medium text-foreground mb-4">Events</h3>
+            <h3 className="font-medium text-[#1a1a1a] mb-4">Events</h3>
             <ul className="space-y-3">
               {footerLinks.events.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground boty-transition"
+                    className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition"
                   >
                     {link.name}
                   </Link>
@@ -100,13 +100,13 @@ export function Footer() {
 
           {/* Create Links */}
           <div>
-            <h3 className="font-medium text-foreground mb-4">Create</h3>
+            <h3 className="font-medium text-[#1a1a1a] mb-4">Create</h3>
             <ul className="space-y-3">
               {footerLinks.create.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground boty-transition"
+                    className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition"
                   >
                     {link.name}
                   </Link>
@@ -117,13 +117,13 @@ export function Footer() {
 
           {/* Privacy Links */}
           <div>
-            <h3 className="font-medium text-foreground mb-4">Privacy</h3>
+            <h3 className="font-medium text-[#1a1a1a] mb-4">Privacy</h3>
             <ul className="space-y-3">
               {footerLinks.privacy.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted-foreground hover:text-foreground boty-transition"
+                    className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition"
                   >
                     {link.name}
                   </Link>
@@ -134,17 +134,17 @@ export function Footer() {
         </div>
 
         {/* Privacy Badge */}
-        <div className="flex flex-wrap justify-center gap-6 mb-12 pb-8 border-b border-border/50">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Shield className="w-4 h-4 text-primary" />
+        <div className="flex flex-wrap justify-center gap-6 mb-12 pb-8 border-b border-[#e5e5e5]">
+          <div className="flex items-center gap-2 text-[#666666] text-sm">
+            <Shield className="w-4 h-4 text-[#6366f1]" />
             <span>End-to-End Encrypted</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Lock className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2 text-[#666666] text-sm">
+            <Lock className="w-4 h-4 text-[#6366f1]" />
             <span>Fhenix Powered</span>
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Globe className="w-4 h-4 text-primary" />
+          <div className="flex items-center gap-2 text-[#666666] text-sm">
+            <Globe className="w-4 h-4 text-[#6366f1]" />
             <span>Decentralized</span>
           </div>
         </div>
@@ -152,14 +152,14 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="pt-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[#666666]">
               &copy; {new Date().getFullYear()} EventNest. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground boty-transition">
+              <Link href="#" className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition">
                 Privacy Policy
               </Link>
-              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground boty-transition">
+              <Link href="#" className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition">
                 Terms of Service
               </Link>
             </div>
