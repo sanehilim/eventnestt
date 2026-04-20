@@ -2,78 +2,42 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Calendar, MapPin, Users, Ticket, EyeOff, Lock } from "lucide-react"
+import { Calendar, MapPin, Users, Ticket, EyeOff, Lock, Loader2 } from "lucide-react"
+import { useEvents, type Event } from "@/hooks/use-events"
 
-type EventCategory = "all" | "music" | "tech" | "art" | "sports" | "business"
-
-const events = [
-  {
-    id: "web3-summit-2024",
-    name: "Web3 Privacy Summit",
-    description: "The future of on-chain privacy and FHE",
-    date: "2024-06-15",
-    location: "San Francisco, CA",
-    image: "/image.png",
-    badge: "Private",
-    badgeIcon: Lock,
-    category: "tech" as EventCategory,
-    attendees: 250,
-    maxAttendees: 500,
-    isPrivate: true
-  },
-  {
-    id: "crypto-art-expo",
-    name: "Crypto Art Expo",
-    description: "NFT galleries and digital art showcases",
-    date: "2024-07-20",
-    location: "New York, NY",
-    image: "/image.png",
-    badge: "VIP",
-    badgeIcon: Lock,
-    category: "art" as EventCategory,
-    attendees: 180,
-    maxAttendees: 200,
-    isPrivate: true
-  },
-  {
-    id: "defi-conference",
-    name: "DeFi Innovation Conference",
-    description: "Decentralized finance breakthroughs",
-    date: "2024-08-10",
-    location: "London, UK",
-    image: "/image.png",
-    badge: "Public",
-    badgeIcon: EyeOff,
-    category: "business" as EventCategory,
-    attendees: 450,
-    maxAttendees: 1000,
-    isPrivate: false
-  },
-  {
-    id: "underground-rave",
-    name: "Underground Rave",
-    description: "Exclusive electronic music experience",
-    date: "2024-06-30",
-    location: "Berlin, Germany",
-    image: "/image.png",
-    badge: "Invite Only",
-    badgeIcon: Lock,
-    category: "music" as EventCategory,
-    attendees: 99,
-    maxAttendees: 100,
-    isPrivate: true
-  }
-]
+type EventCategory = "all" | "hackathon" | "conference" | "vip" | "workshop" | "meetup"
 
 const categories = [
   { value: "all" as EventCategory, label: "All" },
-  { value: "tech" as EventCategory, label: "Tech" },
-  { value: "music" as EventCategory, label: "Music" },
-  { value: "art" as EventCategory, label: "Art" },
-  { value: "business" as EventCategory, label: "Business" }
+  { value: "hackathon" as EventCategory, label: "Hackathons" },
+  { value: "conference" as EventCategory, label: "Conferences" },
+  { value: "workshop" as EventCategory, label: "Workshops" },
+  { value: "vip" as EventCategory, label: "VIP" }
 ]
 
+// Real Unsplash images for Web3/Ethereum events
+const EVENT_IMAGES = [
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
+  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
+  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
+  "https://images.unsplash.com/photo-1639762681485-074b7f938bd0?w=800&q=80",
+  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80",
+  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
+  "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&q=80",
+]
+
+function formatDate(timestamp: bigint): string {
+  try {
+    const date = new Date(Number(timestamp))
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  } catch {
+    return "TBA"
+  }
+}
+
 export function EventGrid() {
+  const { events, loading, error } = useEvents()
   const [selectedCategory, setSelectedCategory] = useState<EventCategory>("all")
   const [isVisible, setIsVisible] = useState(false)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -116,19 +80,31 @@ export function EventGrid() {
     }
   }, [])
 
+  if (loading) {
+    return (
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="w-8 h-8 text-[#6366f1] animate-spin" />
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <span className="text-sm tracking-[0.3em] uppercase text-[#6366f1] mb-4 block animate-blur-in opacity-0" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+          <span className="text-sm tracking-[0.3em] uppercase text-[#6366f1] mb-4 block animate-blur-in opacity-0" style={{ animationDelay: "0.2s", animationFillMode: "forwards" }}>
             Discover
           </span>
-          <h2 className="text-4xl leading-tight text-[#1a1a1a] mb-4 text-balance md:text-7xl animate-blur-in opacity-0" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
+          <h2 className="text-4xl leading-tight text-[#1a1a1a] mb-4 text-balance md:text-7xl animate-blur-in opacity-0" style={{ animationDelay: "0.4s", animationFillMode: "forwards" }}>
             Find Your Event
           </h2>
-          <p className="text-lg text-[#666666] max-w-md mx-auto animate-blur-in opacity-0" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>
-            Privacy-first events that respect your data
+          <p className="text-lg text-[#666666] max-w-md mx-auto animate-blur-in opacity-0" style={{ animationDelay: "0.6s", animationFillMode: "forwards" }}>
+            Privacy-first Web3 events powered by Fhenix
           </p>
         </div>
 
@@ -138,8 +114,8 @@ export function EventGrid() {
             <div
               className="absolute top-1 bottom-1 bg-[#1a1a1a] rounded-full transition-all duration-300 ease-out"
               style={{
-                left: selectedCategory === 'all' ? '4px' : selectedCategory === 'tech' ? 'calc(20% + 2px)' : selectedCategory === 'music' ? 'calc(40% + 2px)' : selectedCategory === 'art' ? 'calc(60% + 2px)' : 'calc(80% + 2px)',
-                width: 'calc(20% - 4px)'
+                left: selectedCategory === "all" ? "4px" : selectedCategory === "hackathon" ? "calc(20% + 2px)" : selectedCategory === "conference" ? "calc(40% + 2px)" : selectedCategory === "workshop" ? "calc(60% + 2px)" : "calc(80% + 2px)",
+                width: "calc(20% - 4px)"
               }}
             />
             {categories.map((category) => (
@@ -169,45 +145,43 @@ export function EventGrid() {
               key={`${selectedCategory}-${event.id}`}
               href={`/events/${event.id}`}
               className={`group transition-all duration-500 ease-out ${
-                isVisible && !isTransitioning ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                isVisible && !isTransitioning ? "opacity-100 scale-100" : "opacity-0 scale-95"
               }`}
-              style={{ transitionDelay: isTransitioning ? '0ms' : `${index * 80}ms` }}
+              style={{ transitionDelay: isTransitioning ? "0ms" : `${index * 80}ms` }}
             >
               <div className="bg-white rounded-3xl overflow-hidden boty-shadow boty-transition group-hover:scale-[1.02] border border-[#e5e5e5]">
                 {/* Image */}
                 <div className="relative aspect-square bg-[#f5f5f5] overflow-hidden">
                   <img
-                    src={event.image}
+                    src={EVENT_IMAGES[index % EVENT_IMAGES.length]}
                     alt={event.name}
                     className="w-full h-full object-cover boty-transition group-hover:scale-105"
                   />
                   {/* Badge */}
-                  {event.badge && (
-                    <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs tracking-wide bg-white/90 backdrop-blur-sm text-[#1a1a1a] flex items-center gap-1.5 border border-[#e5e5e5]">
-                      <event.badgeIcon className="w-3 h-3 text-[#6366f1]" />
-                      {event.badge}
-                    </span>
-                  )}
-                  {/* Privacy indicator */}
-                  <div className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center boty-shadow">
+                  <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs tracking-wide bg-white/90 backdrop-blur-sm text-[#1a1a1a] flex items-center gap-1.5 border border-[#e5e5e5]">
                     {event.isPrivate ? (
-                      <Lock className="w-4 h-4 text-[#6366f1]" />
+                      <Lock className="w-3 h-3 text-[#6366f1]" />
                     ) : (
-                      <EyeOff className="w-4 h-4 text-[#666666]" />
+                      <EyeOff className="w-3 h-3 text-[#666666]" />
                     )}
+                    {event.isPrivate ? "Private" : "Public"}
+                  </span>
+                  {/* Tickets Left */}
+                  <div className="absolute bottom-4 right-4 px-3 py-1 rounded-full text-xs bg-white/90 backdrop-blur-sm text-[#1a1a1a]">
+                    {Number(event.maxAttendees) - event.totalTicketsSold} spots left
                   </div>
                 </div>
 
                 {/* Info */}
                 <div className="p-5">
-                  <h3 className="text-lg text-[#1a1a1a] mb-1">{event.name}</h3>
-                  <p className="text-sm text-[#666666] mb-3">{event.description}</p>
+                  <h3 className="text-lg text-[#1a1a1a] mb-1 font-medium">{event.name}</h3>
+                  <p className="text-sm text-[#666666] mb-3 line-clamp-2">{event.description}</p>
 
                   {/* Meta */}
                   <div className="space-y-2 text-sm text-[#666666] mb-4">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-[#6366f1]/70" />
-                      <span>{event.date}</span>
+                      <span>{formatDate(event.eventDate)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-[#6366f1]/70" />
@@ -215,14 +189,14 @@ export function EventGrid() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-[#6366f1]/70" />
-                      <span>{event.attendees}/{event.maxAttendees}</span>
+                      <span>{event.totalTicketsSold}/{event.maxAttendees}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Ticket className="w-4 h-4 text-[#6366f1]" />
-                      <span className="text-sm font-medium text-[#1a1a1a]">Get Tickets</span>
+                      <span className="text-sm font-medium text-[#1a1a1a]">{event.ticketPrice}</span>
                     </div>
                   </div>
                 </div>
