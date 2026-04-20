@@ -261,7 +261,7 @@ export default function EventDetailPage() {
 
                       <ConnectButton.Custom>
                         {({ account, chain, openConnectModal, mounted }) => (
-                          <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" })}>
+                          <div className={!mounted ? "opacity-0 pointer-events-none" : ""}>
                             {account ? (
                               <button
                                 type="button"
@@ -303,7 +303,7 @@ export default function EventDetailPage() {
                   <div className="space-y-6">
                     <ConnectButton.Custom>
                       {({ account, chain, openConnectModal, openChainModal, mounted }) => (
-                        <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" })}>
+                        <div className={!mounted ? "opacity-0 pointer-events-none" : ""}>
                           {!mounted || !account ? (
                             <button
                               type="button"

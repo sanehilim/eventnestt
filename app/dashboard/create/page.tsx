@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2 } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
@@ -394,7 +394,7 @@ export default function CreateEventPage() {
 
                 <ConnectButton.Custom>
                   {({ account, chain, openConnectModal, openChainModal, mounted }) => (
-                    <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" })}>
+                    <div className={!mounted ? "opacity-0 pointer-events-none" : ""}>
                       {!mounted || !account ? (
                         <button
                           type="button"

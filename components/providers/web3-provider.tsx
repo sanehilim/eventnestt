@@ -2,7 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { WagmiProvider, createConfig, http } from "wagmi"
-import { RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit"
+import { RainbowKitProvider, lightTheme } from "@rainbow-me/rainbowkit"
 import { mainnet, sepolia } from "wagmi/chains"
 import { injected, metaMask, coinbaseWallet, walletConnect } from "wagmi/connectors"
 
@@ -26,9 +26,10 @@ const wagmiConfig = createConfig({
 
 const queryClient = new QueryClient()
 
-const customTheme = darkTheme({
-  accentColor: "#00D4FF",
-  accentColorForeground: "#0A0A0F",
+// Light theme matching EventNest's white aesthetic
+const customTheme = lightTheme({
+  accentColor: "#6366f1",
+  accentColorForeground: "white",
   borderRadius: "large",
   fontStack: "system",
 })
@@ -42,15 +43,15 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
             ...customTheme,
             colors: {
               ...customTheme.colors,
-              modalBackground: "#12121A",
-              modalBorder: "#2A2A3E",
-              modalText: "#F0F4FF",
-              modalTextDim: "#8B8B9E",
-              profileForeground: "#F0F4FF",
-              closeButton: "#F0F4FF",
-              closeButtonBackground: "#1A1A2E",
-              connectButtonBackground: "#00D4FF",
-              connectButtonText: "#0A0A0F",
+              modalBackground: "#ffffff",
+              modalBorder: "#e5e5e5",
+              modalText: "#1a1a1a",
+              modalTextDim: "#666666",
+              profileForeground: "#1a1a1a",
+              closeButton: "#1a1a1a",
+              closeButtonBackground: "#f5f5f5",
+              connectButtonBackground: "#6366f1",
+              connectButtonText: "white",
             },
           }}
         >

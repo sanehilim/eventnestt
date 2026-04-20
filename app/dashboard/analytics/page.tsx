@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowLeft, TrendingUp, Users, Ticket, DollarSign, Eye, EyeOff, Calendar, BarChart3 } from "lucide-react"
+import { ArrowLeft, TrendingUp, Users, Ticket, DollarSign, Eye, EyeOff, Calendar, BarChart3, Lock } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
