@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Shield, Lock, Eye, Users, Star, ArrowRight } from "lucide-react"
+import { Shield, Lock, Star, ArrowRight } from "lucide-react"
 
 const testimonials = [
   {
@@ -79,30 +79,30 @@ const testimonials = [
 ]
 
 const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
-  <div className="rounded-3xl p-6 bg-card mb-4 flex-shrink-0 border border-border"
+  <div className="rounded-3xl p-6 bg-white mb-4 flex-shrink-0 border border-[#e5e5e5]"
     style={{
-      boxShadow: '0 0 40px rgba(0, 212, 255, 0.05)'
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
     }}
   >
     {/* Stars */}
     <div className="flex gap-1 mb-4">
       {[...Array(testimonial.rating)].map((_, i) => (
-        <Star key={i} className="w-4 h-4 text-primary fill-primary" />
+        <Star key={i} className="w-4 h-4 text-[#f59e0b] fill-[#f59e0b]" />
       ))}
     </div>
 
     {/* Quote */}
-    <p className="text-foreground/80 leading-relaxed mb-4 text-pretty font-medium text-lg tracking-wide">
+    <p className="text-[#1a1a1a]/80 leading-relaxed mb-4 text-pretty font-medium text-lg">
       &ldquo;{testimonial.text}&rdquo;
     </p>
 
     {/* Author */}
     <div className="flex items-start justify-between gap-2">
       <div>
-        <p className="text-foreground text-sm font-bold">{testimonial.name}</p>
-        <p className="text-xs text-muted-foreground">{testimonial.location}</p>
+        <p className="text-[#1a1a1a] text-sm font-bold">{testimonial.name}</p>
+        <p className="text-xs text-[#666666]">{testimonial.location}</p>
       </div>
-      <span className="text-xs tracking-wide text-primary bg-primary/10 px-2 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
+      <span className="text-xs tracking-wide text-[#6366f1] bg-[#6366f1]/10 px-2 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
         <Lock className="w-3 h-3" />
         {testimonial.event}
       </span>
@@ -140,17 +140,17 @@ export function Testimonials() {
   }, [])
 
   return (
-    <section className="py-24 bg-background overflow-hidden pb-24 pt-12 grid-pattern">
+    <section className="py-24 bg-[#f5f5f5] overflow-hidden pb-24 pt-12">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <div ref={headerRef} className="text-center mb-16">
-          <span className={`text-sm tracking-[0.3em] uppercase text-primary mb-4 block ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.2s', animationFillMode: 'forwards' } : {}}>
+          <span className={`text-sm tracking-[0.3em] uppercase text-[#6366f1] mb-4 block ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.2s', animationFillMode: 'forwards' } : {}}>
             Testimonials
           </span>
-          <h2 className={`font-serif text-4xl leading-tight text-foreground text-balance md:text-7xl ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.4s', animationFillMode: 'forwards' } : {}}>
+          <h2 className={`text-4xl leading-tight text-[#1a1a1a] text-balance md:text-7xl ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.4s', animationFillMode: 'forwards' } : {}}>
             Trusted by Event Organizers
           </h2>
-          <p className="text-lg text-muted-foreground mt-4 max-w-md mx-auto">
+          <p className="text-lg text-[#666666] mt-4 max-w-md mx-auto">
             See what organizers and attendees say about privacy-first event ticketing.
           </p>
         </div>
@@ -158,8 +158,8 @@ export function Testimonials() {
         {/* Scrolling Testimonials */}
         <div className="relative">
           {/* Gradient Overlays */}
-          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
-          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+          <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[#f5f5f5] to-transparent z-10 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#f5f5f5] to-transparent z-10 pointer-events-none" />
 
           {/* Mobile - Single Column */}
           <div className="md:hidden h-[600px]">
