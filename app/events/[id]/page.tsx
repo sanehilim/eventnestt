@@ -3,128 +3,110 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { Calendar, MapPin, Users, Ticket, Lock, Eye, EyeOff, Shield, ArrowLeft, ArrowRight, Check, AlertCircle, Key } from "lucide-react"
+import { Calendar, MapPin, Users, Ticket, Lock, EyeOff, Shield, ArrowLeft, ArrowRight, Check, AlertCircle, Key, Loader2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { useAccount } from "wagmi"
+import { useRegisterForEvent, useEvents } from "@/hooks/use-events"
 
-const eventDetails: Record<string, {
-  id: string
-  name: string
-  description: string
-  longDescription: string
-  date: string
-  time: string
-  location: string
-  image: string
-  badge: string
-  badgeIcon: typeof Lock
-  attendees: number
-  maxAttendees: number
-  price: string
-  priceWei?: string
-  isPrivate: boolean
-  features: string[]
-  organizer: string
-  contractAddress: string
-}> = {
-  "web3-summit-2024": {
-    id: "web3-summit-2024",
-    name: "Web3 Privacy Summit",
-    description: "The future of on-chain privacy and FHE",
-    longDescription: "Join us for the premier event focused on privacy-preserving technologies in Web3. Learn how Fhenix and Fully Homomorphic Encryption are revolutionizing on-chain confidentiality.",
-    date: "2024-06-15",
-    time: "10:00 AM",
-    location: "San Francisco, CA",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200",
-    badge: "Private",
-    badgeIcon: Lock,
-    attendees: 250,
-    maxAttendees: 500,
-    price: "Encrypted",
-    isPrivate: true,
-    features: [
-      "Encrypted attendee list",
-      "Private pricing tiers",
-      "VIP access control",
-      "On-chain verification"
-    ],
-    organizer: "0x1234...5678",
-    contractAddress: "0xabcd...efgh"
-  },
-  "crypto-art-expo": {
-    id: "crypto-art-expo",
-    name: "Crypto Art Expo",
-    description: "NFT galleries and digital art showcases",
-    longDescription: "Experience the intersection of art and blockchain technology. Exclusive NFT galleries, artist meetups, and live auctions.",
-    date: "2024-07-20",
-    time: "6:00 PM",
-    location: "New York, NY",
-    image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=1200",
-    badge: "VIP",
-    badgeIcon: Eye,
-    attendees: 180,
-    maxAttendees: 200,
-    price: "Whitelist Only",
-    isPrivate: true,
-    features: [
-      "VIP whitelist access",
-      "Exclusive NFT drops",
-      "Private artist sessions",
-      "Encrypted bidding"
-    ],
-    organizer: "0x9876...4321",
-    contractAddress: "0xijkl...mnop"
+const EVENT_IMAGES = [
+  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200&q=80",
+  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=1200&q=80",
+  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200&q=80",
+  "https://images.unsplash.com/photo-1639762681485-074b7f938bd0?w=1200&q=80",
+]
+
+function formatDate(timestamp: bigint): string {
+  try {
+    const date = new Date(Number(timestamp))
+    return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
+  } catch {
+    return "Date TBA"
   }
-}
-
-const defaultEvent = {
-  id: "web3-summit-2024",
-  name: "Web3 Privacy Summit",
-  description: "The future of on-chain privacy and FHE",
-  longDescription: "Join us for the premier event focused on privacy-preserving technologies in Web3. Learn how Fhenix and Fully Homomorphic Encryption are revolutionizing on-chain confidentiality.",
-  date: "2024-06-15",
-  time: "10:00 AM",
-  location: "San Francisco, CA",
-  image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1200",
-  badge: "Private",
-  badgeIcon: Lock,
-  attendees: 250,
-  maxAttendees: 500,
-  price: "Encrypted",
-  isPrivate: true,
-  features: [
-    "Encrypted attendee list",
-    "Private pricing tiers",
-    "VIP access control",
-    "On-chain verification"
-  ],
-  organizer: "0x1234...5678",
-  contractAddress: "0xabcd...efgh"
 }
 
 export default function EventDetailPage() {
   const params = useParams()
-  const eventId = params.id as string
-  const event = eventDetails[eventId] || { ...defaultEvent, id: eventId, name: eventId.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') }
+  const eventId = parseInt(params.id as string) || 1
+  const { events, loading } = useEvents()
+  const { register, isConnected } = useRegisterForEvent()
+  const { address } = useAccount()
 
   const [accessCode, setAccessCode] = useState("")
   const [showAccessForm, setShowAccessForm] = useState(false)
   const [accessStatus, setAccessStatus] = useState<"idle" | "verifying" | "approved" | "denied">("idle")
   const [isRegistered, setIsRegistered] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
 
-  const handleAccessRequest = () => {
+  const event = events.find(e => e.id === eventId)
+
+  const handleAccessRequest = async () => {
     if (!accessCode.trim()) return
     setAccessStatus("verifying")
+    setIsRegistering(true)
 
-    setTimeout(() => {
+    try {
+      await register(eventId, accessCode)
       setAccessStatus("approved")
       setIsRegistered(true)
-    }, 2000)
+    } catch (err) {
+      setAccessStatus("denied")
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
+  const handleDirectRegister = async () => {
+    if (!isConnected) return
+    setAccessStatus("verifying")
+    setIsRegistering(true)
+
+    try {
+      await register(eventId)
+      setAccessStatus("approved")
+      setIsRegistered(true)
+    } catch (err) {
+      setAccessStatus("denied")
+    } finally {
+      setIsRegistering(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white">
+        <Header />
+        <div className="pt-28 pb-20">
+          <div className="flex items-center justify-center h-96">
+            <Loader2 className="w-8 h-8 text-[#6366f1] animate-spin" />
+          </div>
+        </div>
+        <Footer />
+      </main>
+    )
+  }
+
+  if (!event) {
+    return (
+      <main className="min-h-screen bg-white">
+        <Header />
+        <div className="pt-28 pb-20">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+            <h1 className="text-4xl text-[#1a1a1a] mb-4">Event Not Found</h1>
+            <p className="text-[#666666] mb-8">The event you are looking for does not exist.</p>
+            <Link href="/events" className="text-[#6366f1] hover:underline">
+              Browse all events
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </main>
+    )
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-white">
       <Header />
 
       <div className="pt-28 pb-20">
@@ -132,7 +114,7 @@ export default function EventDetailPage() {
           {/* Back Link */}
           <Link
             href="/events"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary boty-transition mb-8"
+            className="inline-flex items-center gap-2 text-[#666666] hover:text-[#1a1a1a] boty-transition mb-8"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Events
@@ -143,88 +125,95 @@ export default function EventDetailPage() {
             <div>
               <div className="relative aspect-video rounded-3xl overflow-hidden boty-shadow mb-8">
                 <img
-                  src={event.image}
+                  src={EVENT_IMAGES[eventId % EVENT_IMAGES.length]}
                   alt={event.name}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-4 left-4">
-                  <span className="px-4 py-2 rounded-full text-sm tracking-wide bg-card/90 backdrop-blur-sm text-primary flex items-center gap-2 border border-primary/20">
-                    <event.badgeIcon className="w-4 h-4" />
-                    {event.badge}
+                  <span className="px-4 py-2 rounded-full text-sm tracking-wide bg-white/90 backdrop-blur-sm text-[#1a1a1a] flex items-center gap-2 border border-[#e5e5e5]">
+                    {event.isPrivate ? (
+                      <Lock className="w-4 h-4 text-[#6366f1]" />
+                    ) : (
+                      <EyeOff className="w-4 h-4 text-[#666666]" />
+                    )}
+                    {event.isPrivate ? "Private Event" : "Public Event"}
                   </span>
-                </div>
-                <div className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-card/90 backdrop-blur-sm flex items-center justify-center">
-                  {event.isPrivate ? (
-                    <Lock className="w-5 h-5 text-primary" />
-                  ) : (
-                    <EyeOff className="w-5 h-5 text-muted-foreground" />
-                  )}
                 </div>
               </div>
 
               {/* Event Details */}
-              <div className="bg-card rounded-3xl p-8 border border-border">
-                <h2 className="font-serif text-2xl text-foreground mb-6">Event Details</h2>
+              <div className="bg-[#f5f5f5] rounded-3xl p-8 border border-[#e5e5e5]">
+                <h2 className="text-2xl text-[#1a1a1a] mb-6">Event Details</h2>
                 <div className="space-y-4 mb-8">
-                  <div className="flex items-center gap-3 text-foreground/80">
-                    <Calendar className="w-5 h-5 text-primary" />
-                    <span>{event.date} at {event.time}</span>
+                  <div className="flex items-center gap-3 text-[#666666]">
+                    <Calendar className="w-5 h-5 text-[#6366f1]" />
+                    <span>{formatDate(event.eventDate)}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-foreground/80">
-                    <MapPin className="w-5 h-5 text-primary" />
+                  <div className="flex items-center gap-3 text-[#666666]">
+                    <MapPin className="w-5 h-5 text-[#6366f1]" />
                     <span>{event.location}</span>
                   </div>
-                  <div className="flex items-center gap-3 text-foreground/80">
-                    <Users className="w-5 h-5 text-primary" />
-                    <span>{event.attendees}/{event.maxAttendees} attendees</span>
+                  <div className="flex items-center gap-3 text-[#666666]">
+                    <Users className="w-5 h-5 text-[#6366f1]" />
+                    <span>{event.totalTicketsSold}/{event.maxAttendees} attendees</span>
                   </div>
-                  <div className="flex items-center gap-3 text-foreground/80">
-                    <Ticket className="w-5 h-5 text-primary" />
-                    <span>{event.price}</span>
+                  <div className="flex items-center gap-3 text-[#666666]">
+                    <Ticket className="w-5 h-5 text-[#6366f1]" />
+                    <span>{event.ticketPrice}</span>
                   </div>
                 </div>
 
-                <p className="text-muted-foreground leading-relaxed">
-                  {event.longDescription}
+                <p className="text-[#666666] leading-relaxed">
+                  {event.description}
                 </p>
               </div>
             </div>
 
             {/* Right Column - Registration */}
             <div>
-              <div className="bg-card rounded-3xl p-8 border border-border sticky top-28">
-                <h1 className="font-serif text-4xl text-foreground mb-4">{event.name}</h1>
-                <p className="text-lg text-muted-foreground mb-6">{event.description}</p>
+              <div className="bg-[#f5f5f5] rounded-3xl p-8 border border-[#e5e5e5] sticky top-28">
+                <h1 className="text-4xl text-[#1a1a1a] mb-4">{event.name}</h1>
+                <p className="text-lg text-[#666666] mb-6">{event.description}</p>
 
                 {/* Privacy Features */}
-                <div className="bg-secondary rounded-2xl p-6 mb-8 border border-border">
+                <div className="bg-white rounded-2xl p-6 mb-8 border border-[#e5e5e5]">
                   <div className="flex items-center gap-2 mb-4">
-                    <Shield className="w-5 h-5 text-primary" />
-                    <span className="font-medium text-foreground">Privacy Features</span>
+                    <Shield className="w-5 h-5 text-[#6366f1]" />
+                    <span className="font-medium text-[#1a1a1a]">Privacy Features</span>
                   </div>
                   <ul className="space-y-3">
-                    {event.features.map((feature, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Check className="w-4 h-4 text-primary flex-shrink-0" />
-                        {feature}
-                      </li>
-                    ))}
+                    <li className="flex items-center gap-2 text-sm text-[#666666]">
+                      <Check className="w-4 h-4 text-[#6366f1] flex-shrink-0" />
+                      {event.isPrivate ? "Private event - access controlled" : "Public event - open registration"}
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-[#666666]">
+                      <Check className="w-4 h-4 text-[#6366f1] flex-shrink-0" />
+                      {event.requiresInviteCode ? "Invite code required" : "No invite code needed"}
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-[#666666]">
+                      <Check className="w-4 h-4 text-[#6366f1] flex-shrink-0" />
+                      {event.requiresWhitelist ? "Whitelist verification" : "Open to all wallets"}
+                    </li>
+                    <li className="flex items-center gap-2 text-sm text-[#666666]">
+                      <Lock className="w-4 h-4 text-[#6366f1] flex-shrink-0" />
+                      On-chain NFT ticket minting
+                    </li>
                   </ul>
                 </div>
 
                 {/* Registration Section */}
-                {isRegistered ? (
-                  <div className="bg-primary/10 rounded-2xl p-6 border border-primary/20 text-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                      <Check className="w-8 h-8 text-primary" />
+                {isRegistered || accessStatus === "approved" ? (
+                  <div className="bg-[#10b981]/10 rounded-2xl p-6 border border-[#10b981]/20 text-center">
+                    <div className="w-16 h-16 rounded-full bg-[#10b981]/20 flex items-center justify-center mx-auto mb-4">
+                      <Check className="w-8 h-8 text-[#10b981]" />
                     </div>
-                    <h3 className="font-serif text-xl text-foreground mb-2">You are registered!</h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Your ticket has been issued as an NFT. Check your wallet for your ticket.
+                    <h3 className="text-xl text-[#1a1a1a] mb-2">You are registered!</h3>
+                    <p className="text-sm text-[#666666] mb-4">
+                      Your NFT ticket is being minted. Check your wallet.
                     </p>
                     <Link
                       href="/tickets"
-                      className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full text-sm font-medium boty-transition hover:bg-primary/90"
+                      className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 rounded-full text-sm font-medium boty-transition hover:bg-[#333]"
                     >
                       View My Tickets
                       <ArrowRight className="w-4 h-4" />
@@ -232,17 +221,17 @@ export default function EventDetailPage() {
                   </div>
                 ) : event.isPrivate && !showAccessForm ? (
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                      <Lock className="w-8 h-8 text-primary" />
+                    <div className="w-16 h-16 rounded-full bg-[#6366f1]/10 flex items-center justify-center mx-auto mb-4">
+                      <Lock className="w-8 h-8 text-[#6366f1]" />
                     </div>
-                    <h3 className="font-serif text-xl text-foreground mb-2">Private Event</h3>
-                    <p className="text-sm text-muted-foreground mb-6">
+                    <h3 className="text-xl text-[#1a1a1a] mb-2">Private Event</h3>
+                    <p className="text-sm text-[#666666] mb-6">
                       This event requires an access code or invitation to register.
                     </p>
                     <button
                       type="button"
                       onClick={() => setShowAccessForm(true)}
-                      className="bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary"
+                      className="bg-[#6366f1] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#5558e3] boty-shadow"
                     >
                       Request Access
                     </button>
@@ -250,14 +239,14 @@ export default function EventDetailPage() {
                 ) : event.isPrivate ? (
                   <div className="space-y-6">
                     <div className="flex items-center gap-2">
-                      <Key className="w-5 h-5 text-primary" />
-                      <span className="font-medium text-foreground">Enter Access Code</span>
+                      <Key className="w-5 h-5 text-[#6366f1]" />
+                      <span className="font-medium text-[#1a1a1a]">Enter Access Code</span>
                     </div>
 
                     {accessStatus === "denied" && (
-                      <div className="bg-destructive/10 rounded-xl p-4 border border-destructive/20 flex items-center gap-3">
-                        <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0" />
-                        <span className="text-sm text-destructive">Invalid access code. Please try again or request an invitation.</span>
+                      <div className="bg-[#ef4444]/10 rounded-xl p-4 border border-[#ef4444]/20 flex items-center gap-3">
+                        <AlertCircle className="w-5 h-5 text-[#ef4444] flex-shrink-0" />
+                        <span className="text-sm text-[#ef4444]">Invalid access code. Please try again or request an invitation.</span>
                       </div>
                     )}
 
@@ -267,27 +256,22 @@ export default function EventDetailPage() {
                         placeholder="Enter your access code or invite PIN"
                         value={accessCode}
                         onChange={(e) => setAccessCode(e.target.value)}
-                        className="w-full bg-secondary border border-border rounded-xl px-4 py-4 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 boty-transition"
+                        className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
                       />
 
                       <ConnectButton.Custom>
                         {({ account, chain, openConnectModal, mounted }) => (
-                          <div {...(!mounted && { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none' } })}>
+                          <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" })}>
                             {account ? (
                               <button
                                 type="button"
                                 onClick={handleAccessRequest}
                                 disabled={accessStatus === "verifying" || !accessCode.trim()}
-                                className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary disabled:opacity-50 flex items-center justify-center gap-2"
+                                className="w-full bg-[#6366f1] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#5558e3] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                               >
                                 {accessStatus === "verifying" ? (
                                   <>
-                                    <span className="animate-spin">
-                                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                      </svg>
-                                    </span>
+                                    <Loader2 className="w-5 h-5 animate-spin" />
                                     Verifying...
                                   </>
                                 ) : (
@@ -301,7 +285,7 @@ export default function EventDetailPage() {
                               <button
                                 type="button"
                                 onClick={openConnectModal}
-                                className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary"
+                                className="w-full bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#333] boty-shadow"
                               >
                                 Connect Wallet to Register
                               </button>
@@ -311,20 +295,20 @@ export default function EventDetailPage() {
                       </ConnectButton.Custom>
                     </div>
 
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-[#999999] text-center">
                       Your access code is encrypted and verified on-chain using Fhenix.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     <ConnectButton.Custom>
-                      {({ account, chain, openConnectModal, openChainModal, openAccountModal, mounted }) => (
-                        <div {...(!mounted && { 'aria-hidden': true, style: { opacity: 0, pointerEvents: 'none' } })}>
+                      {({ account, chain, openConnectModal, openChainModal, mounted }) => (
+                        <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" })}>
                           {!mounted || !account ? (
                             <button
                               type="button"
                               onClick={openConnectModal}
-                              className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary"
+                              className="w-full bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#333] boty-shadow"
                             >
                               Connect Wallet to Register
                             </button>
@@ -332,16 +316,22 @@ export default function EventDetailPage() {
                             <button
                               type="button"
                               onClick={openChainModal}
-                              className="w-full bg-destructive text-destructive-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition"
+                              className="w-full bg-[#ef4444] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition"
                             >
                               Wrong Network
                             </button>
                           ) : (
                             <button
                               type="button"
-                              className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary"
-                              onClick={() => setIsRegistered(true)}
+                              onClick={handleDirectRegister}
+                              disabled={isRegistering}
+                              className="w-full bg-[#6366f1] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#5558e3] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                             >
+                              {isRegistering ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              ) : (
+                                <Ticket className="w-4 h-4" />
+                              )}
                               Register for Event
                             </button>
                           )}
@@ -349,29 +339,19 @@ export default function EventDetailPage() {
                       )}
                     </ConnectButton.Custom>
 
-                    <div className="bg-secondary rounded-xl p-4 border border-border">
+                    <div className="bg-white rounded-xl p-4 border border-[#e5e5e5]">
                       <div className="flex items-center gap-2 mb-2">
-                        <Shield className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-medium text-foreground">What you get:</span>
+                        <Shield className="w-4 h-4 text-[#6366f1]" />
+                        <span className="text-sm font-medium text-[#1a1a1a]">What you get:</span>
                       </div>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        <li> NFT ticket stored in your wallet</li>
-                        <li> On-chain verification</li>
-                        <li> Transferable ticket</li>
+                      <ul className="space-y-1 text-sm text-[#666666]">
+                        <li>NFT ticket stored in your wallet</li>
+                        <li>On-chain verification</li>
+                        <li>Transferable ticket</li>
                       </ul>
                     </div>
                   </div>
                 )}
-
-                {/* Contract Info */}
-                <div className="mt-8 pt-8 border-t border-border">
-                  <p className="text-xs text-muted-foreground">
-                    Contract: <span className="font-mono">{event.contractAddress}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Organizer: <span className="font-mono">{event.organizer}</span>
-                  </p>
-                </div>
               </div>
             </div>
           </div>
