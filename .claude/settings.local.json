@@ -18,7 +18,13 @@
       "Bash(taskkill //F //PID 16832 pkill -f \"next\" sleep 2 netstat -ano)",
       "Bash(curl -s http://localhost:3000/events -o /dev/null -w \" %{http_code}\")",
       "Bash(curl -s http://localhost:3000/dashboard -o /dev/null -w \" %{http_code}\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null -w \"Home: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/events -o /dev/null -w \"Events: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/events/1 -o /dev/null -w \"Event Detail: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/dashboard -o /dev/null -w \"Dashboard: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/dashboard/create -o /dev/null -w \"Create: %{http_code}\\\\n\")",
+      "Bash(curl -s http://localhost:3000/events/1)"
     ]
   }
 }

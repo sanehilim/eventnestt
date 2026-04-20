@@ -45,6 +45,8 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
     mapping(uint256 => euint32) public encryptedAttendeeCount;
     mapping(uint256 => ebool) public encryptedInviteCodes;
     mapping(uint256 => ebool) public encryptedWhitelist;
+    mapping(uint256 => bytes32) public eventInviteCodes;
+    mapping(uint256 => mapping(address => bool)) public eventWhitelist;
 
     // Encrypted ticket price
     mapping(uint256 => euint32) public encryptedTicketPrice;
@@ -114,9 +116,33 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         encryptedWhitelist[eventId] = FHE.or(encryptedWhitelist[eventId], isWhitelisted);
     }
 
+    // Set invite code for an event (organizer only)
+    function setInviteCode(uint256 eventId, bytes32 encryptedCode) external onlyOwner {
+        encryptedInviteCodes[eventId] = FHE.asEbool(encryptedCode);
+        eventInviteCodes[eventId] = encryptedCode;
+    }
+
+    // Add to whitelist (both encrypted FHE and plaintext for easy checking)
+    function addToWhitelist(uint256 eventId, address wallet) external onlyOwner {
+        eventWhitelist[eventId][wallet] = true;
+        ebool isWhitelisted = FHE.asEbool(keccak256(abi.encodePacked(wallet)));
+        encryptedWhitelist[eventId] = FHE.or(encryptedWhitelist[eventId], isWhitelisted);
+    }
+
+    // Get event count
+    function getEventCount() external view returns (uint256) {
+        return _eventCounter;
+    }
+
+    // Get event by ID
+    function getEvent(uint256 eventId) external view returns (Event memory) {
+        require(events[eventId].eventDate > 0, "Event does not exist");
+        return events[eventId];
+    }
+
     // Verify invite code (encrypted)
     function verifyInviteCode(uint256 eventId, bytes32 encryptedCode) external returns (ebool) {
-        ebool isValid = FHE.eq(FHE.asEuint256(encryptedCode), encryptedInviteCodes[eventId]);
+        ebool isValid = FHE.eq(FHE.asEuint256(encryptedCode), FHE.asEuint256(eventInviteCodes[eventId]));
         return isValid;
     }
 
