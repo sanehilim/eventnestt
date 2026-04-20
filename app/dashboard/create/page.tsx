@@ -22,6 +22,7 @@ export default function CreateEventPage() {
   const [isComplete, setIsComplete] = useState(false)
   const [txHash, setTxHash] = useState<string>("")
   const { isConnected, address } = useAccount()
+  const { createEvent } = useCreateEvent()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -40,9 +41,18 @@ export default function CreateEventPage() {
   const handleSubmit = async () => {
     setIsSubmitting(true)
     try {
-      // Simulate blockchain transaction
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      const hash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("")
+      const { hash } = await createEvent({
+        name: formData.name,
+        description: formData.description,
+        eventDate: BigInt(new Date(formData.date).getTime()),
+        maxAttendees: formData.maxAttendees,
+        isPrivate: formData.isPrivate,
+        requiresInviteCode: formData.requiresInviteCode,
+        requiresWhitelist: formData.requiresWhitelist,
+        ticketPrice: formData.ticketPrice,
+        location: formData.location,
+        category: formData.category
+      })
       setTxHash(hash)
       setIsComplete(true)
     } catch (err) {

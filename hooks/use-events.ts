@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useAccount, useReadContract, useWriteContract, usePublicClient } from "wagmi"
+import { useAccount, useReadContract, useWriteContract, usePublicClient, waitForTransactionReceipt } from "wagmi"
+import { http, createPublicClient, parseEventLog } from "viem"
+import { sepolia } from "wagmi/chains"
 import { abi } from "@/contracts/abi"
-import { parseEther } from "viem"
 
 const CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000") as `0x${string}`
 
@@ -31,7 +32,6 @@ export interface Ticket {
   used: boolean
 }
 
-// Demo events for showcase (shown when contract not deployed)
 const DEMO_EVENTS: Event[] = [
   {
     id: 1,
@@ -155,23 +155,51 @@ const DEMO_EVENTS: Event[] = [
   }
 ]
 
-// Check if contract is deployed
 const isContractDeployed = CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000"
 
-// Hook for reading events from contract or demo data
+// Module-level public client for async use
+const publicClient = createPublicClient({
+  chain: sepolia,
+  transport: http("https://ethereum-sepolia.publicnode.com"),
+})
+
+function contractEventToEvent(id: number, raw: {
+  name: string
+  description: string
+  eventDate: bigint
+  maxAttendees: bigint
+  isPrivate: boolean
+  requiresInviteCode: boolean
+  requiresWhitelist: boolean
+  totalTicketsSold: bigint
+}): Event {
+  return {
+    id,
+    name: raw.name,
+    description: raw.description,
+    eventDate: raw.eventDate,
+    maxAttendees: Number(raw.maxAttendees),
+    isPrivate: raw.isPrivate,
+    requiresInviteCode: raw.requiresInviteCode,
+    requiresWhitelist: raw.requiresWhitelist,
+    totalTicketsSold: Number(raw.totalTicketsSold),
+    ticketPrice: "0 ETH",
+    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
+    location: "TBD",
+    category: "conference"
+  }
+}
+
 export function useEvents() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Try to read event count from contract if deployed
   const { data: eventCount } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi,
     functionName: "getEventCount",
-    query: {
-      enabled: isContractDeployed,
-    }
+    query: { enabled: isContractDeployed }
   })
 
   const fetchEvents = useCallback(async () => {
@@ -179,28 +207,31 @@ export function useEvents() {
     setError(null)
 
     try {
-      if (isContractDeployed && eventCount && eventCount > 0n) {
-        // Fetch events from contract
-        const fetchedEvents: Event[] = []
+      if (isContractDeployed && eventCount !== undefined && eventCount > 0n) {
+        const fetched: Event[] = []
         for (let i = 0; i < Number(eventCount); i++) {
           try {
-            const eventData = await fetchEventFromContract(i)
-            if (eventData) {
-              fetchedEvents.push(eventData)
+            const raw = await publicClient.readContract({
+              address: CONTRACT_ADDRESS,
+              abi,
+              functionName: "getEvent",
+              args: [BigInt(i)]
+            })
+            if (raw) {
+              fetched.push(contractEventToEvent(i, raw as Parameters<typeof contractEventToEvent>[1]))
             }
-          } catch (e) {
-            console.warn(`Failed to fetch event ${i}:`, e)
+          } catch {
+            // skip missing events
           }
         }
-        setEvents(fetchedEvents.length > 0 ? fetchedEvents : DEMO_EVENTS)
+        setEvents(fetched.length > 0 ? fetched : DEMO_EVENTS)
       } else {
-        // Use demo events when contract not deployed
         setEvents(DEMO_EVENTS)
       }
     } catch (err) {
       console.error("Error fetching events:", err)
       setError(err instanceof Error ? err.message : "Failed to fetch events")
-      setEvents(DEMO_EVENTS) // Fallback to demo data
+      setEvents(DEMO_EVENTS)
     } finally {
       setLoading(false)
     }
@@ -213,21 +244,12 @@ export function useEvents() {
   return { events, loading, error, refetch: fetchEvents }
 }
 
-// Helper function to fetch single event from contract
-async function fetchEventFromContract(eventId: number): Promise<Event | null> {
-  // This would use wagmi's useReadContract in a real implementation
-  // For now, return null to use demo data
-  return null
-}
-
 export function useEvent(eventId: number) {
   const { events, loading, error } = useEvents()
   const event = events.find(e => e.id === eventId)
-
   return { event, loading, error }
 }
 
-// Hook for getting user's tickets
 export function useMyTickets() {
   const { address, isConnected } = useAccount()
   const [tickets, setTickets] = useState<Ticket[]>([])
@@ -242,11 +264,8 @@ export function useMyTickets() {
     setLoading(true)
     try {
       if (isContractDeployed) {
-        // Read user's tickets from contract
-        // Implementation would use useReadContract here
         setTickets([])
       } else {
-        // Demo mode - no tickets
         setTickets([])
       }
     } catch (err) {
@@ -263,10 +282,9 @@ export function useMyTickets() {
   return { tickets, loading, refetch: fetchTickets }
 }
 
-// Hook for creating new events
 export function useCreateEvent() {
   const { address, isConnected } = useAccount()
-  const publicClient = usePublicClient()
+  const { writeContractAsync } = useWriteContract()
 
   const createEvent = async (params: {
     name: string
@@ -277,77 +295,116 @@ export function useCreateEvent() {
     requiresInviteCode: boolean
     requiresWhitelist: boolean
     ticketPrice: string
-  }) => {
+    location: string
+    category: string
+    metadataURI?: string
+  }): Promise<{ hash: `0x${string}`; eventId: bigint }> => {
     if (!isConnected || !address) {
       throw new Error("Wallet not connected")
     }
 
-    if (isContractDeployed) {
-      // In production, call contract
-      // const hash = await writeContract(config, {
-      //   address: CONTRACT_ADDRESS,
-      //   abi,
-      //   functionName: 'createEvent',
-      //   args: [params.name, params.description, params.eventDate, BigInt(params.maxAttendees), params.isPrivate, params.requiresInviteCode, params.requiresWhitelist]
-      // })
-      // await publicClient.waitForTransactionReceipt({ hash })
-      // return { hash, eventId: ... }
-      throw new Error("Contract not deployed - demo mode")
-    } else {
-      // Demo mode - simulate transaction
+    if (!isContractDeployed) {
       await new Promise(resolve => setTimeout(resolve, 2000))
       return {
-        hash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-        eventId: Date.now()
+        hash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("") as `0x${string}`,
+        eventId: BigInt(Date.now())
       }
     }
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "createEvent",
+      args: [
+        params.name,
+        params.description,
+        params.metadataURI || "",
+        params.eventDate,
+        BigInt(params.maxAttendees),
+        params.isPrivate,
+        params.requiresInviteCode,
+        params.requiresWhitelist
+      ]
+    })
+
+    const receipt = await waitForTransactionReceipt(publicClient, { hash })
+
+    let eventId = 0n
+    for (const log of receipt.logs) {
+      try {
+        const parsed = parseEventLog({
+          abi,
+          data: log.data,
+          topics: log.topics
+        })
+        if (parsed?.eventName === "EventCreated") {
+          eventId = parsed.args.eventId
+        }
+      } catch {
+        // skip non-matching logs
+      }
+    }
+
+    return { hash, eventId }
   }
 
   return { createEvent, isConnected, address }
 }
 
-// Hook for registering for events
 export function useRegisterForEvent() {
   const { address, isConnected } = useAccount()
-  const publicClient = usePublicClient()
+  const { writeContractAsync } = useWriteContract()
 
-  const register = async (eventId: number, accessCode?: string) => {
+  const register = async (eventId: number, _accessCode?: string): Promise<{ hash: `0x${string}`; ticketId: bigint }> => {
     if (!isConnected || !address) {
       throw new Error("Wallet not connected")
     }
 
-    if (isContractDeployed) {
-      // In production, call contract
-      // const hash = await writeContract(config, {
-      //   address: CONTRACT_ADDRESS,
-      //   abi,
-      //   functionName: 'mintTicket',
-      //   args: [BigInt(eventId), address, false]
-      // })
-      // await publicClient.waitForTransactionReceipt({ hash })
-      // return { hash, ticketId: ... }
-      throw new Error("Contract not deployed - demo mode")
-    } else {
-      // Demo mode - simulate registration with validation
+    if (!isContractDeployed) {
       await new Promise((resolve, reject) => setTimeout(() => {
-        if (accessCode === "INVALID") {
+        if (_accessCode === "INVALID") {
           reject(new Error("Invalid access code"))
         } else {
           resolve(true)
         }
       }, 2000))
-
       return {
-        hash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-        ticketId: Date.now()
+        hash: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("") as `0x${string}`,
+        ticketId: BigInt(Date.now())
       }
     }
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "mintTicket",
+      args: [BigInt(eventId), address, false, "0x0000000000000000000000000000000000000000000000000000000000000000"]
+    })
+
+    const receipt = await waitForTransactionReceipt(publicClient, { hash })
+
+    let ticketId = 0n
+    for (const log of receipt.logs) {
+      try {
+        const parsed = parseEventLog({
+          abi,
+          data: log.data,
+          topics: log.topics
+        })
+        if (parsed?.eventName === "TicketMinted") {
+          ticketId = parsed.args.ticketId
+        }
+      } catch {
+        // skip non-matching logs
+      }
+    }
+
+    return { hash, ticketId }
   }
 
   return { register, isConnected, address }
 }
 
-// Hook for getting organizer's events
 export function useMyEvents() {
   const { address, isConnected } = useAccount()
   const [events, setEvents] = useState<Event[]>([])
@@ -362,10 +419,8 @@ export function useMyEvents() {
     setLoading(true)
     try {
       if (isContractDeployed) {
-        // Fetch organizer's events from contract filtered by address
         setEvents([])
       } else {
-        // Demo mode - show first 3 demo events as "my events"
         setEvents(DEMO_EVENTS.slice(0, 3).map(e => ({...e, name: `My ${e.name}`})))
       }
     } catch (err) {

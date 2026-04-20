@@ -156,11 +156,16 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         uint256 eventId,
         address to,
         bool isVIP,
-        bytes32 encryptedProof
+        bytes32 /* encryptedProof - placeholder for FHE proof */
     ) external returns (uint256) {
         Event storage evt = events[eventId];
         require(evt.eventDate > 0, "Event does not exist");
         require(evt.maxAttendees > evt.totalTicketsSold, "Sold out");
+
+        // For private events, verify access
+        if (evt.isPrivate) {
+            require(verifyAccessCheck(eventId, msg.sender), "Access denied");
+        }
 
         uint256 ticketId = _ticketCounter++;
 
@@ -181,6 +186,22 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         return ticketId;
     }
 
+    // Internal access check
+    function verifyAccessCheck(uint256 eventId, address user) internal view returns (bool) {
+        Event storage evt = events[eventId];
+
+        // Check whitelist if required
+        if (evt.requiresWhitelist) {
+            if (eventWhitelist[eventId][user]) {
+                return true;
+            }
+        }
+
+        // For invite code events, we check if the user is an attendee (invite codes are checked off-chain in this demo)
+        // In a full FHE implementation, the encrypted invite code would be verified on-chain
+        return false;
+    }
+
     // Use ticket (mark as used)
     function useTicket(uint256 ticketId) external {
         require(ownerOf(ticketId) == msg.sender || msg.sender == owner(), "Not authorized");
@@ -199,11 +220,11 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
         return events[eventId].totalTicketsSold;
     }
 
-    // Verify access (returns encrypted result)
+    // Verify access (public wrapper)
     function verifyAccess(
         uint256 eventId,
-        bytes32 encryptedWallet,
-        bytes32 encryptedCode
+        bytes32 /* encryptedWallet */,
+        bytes32 /* encryptedCode */
     ) external returns (bool) {
         Event storage evt = events[eventId];
 
@@ -213,21 +234,18 @@ contract EventNestTicket is ERC721, ERC721URIStorage, Ownable, EIP712 {
             return true;
         }
 
-        // Check whitelist first if required
+        // Check whitelist
         if (evt.requiresWhitelist) {
-            // This would be verified on-chain via FHE
-            // For now, we check if user is in the attendees list
+            if (eventWhitelist[eventId][msg.sender]) {
+                emit AccessVerified(msg.sender, eventId, false);
+                return true;
+            }
+            return false;
         }
 
-        // Check invite code if required
-        if (evt.requiresInviteCode) {
-            // Verify encrypted code
-            // This is a simplified check - real implementation would use FHE
-        }
-
-        // Check if already has a ticket
-        // This would use FHE to compare addresses privately
-        return true;
+        // For invite codes, we rely on mintTicket reverting if not whitelisted
+        // In full FHE, encrypted code verification would happen here
+        return false;
     }
 
     // Override required for ERC721
