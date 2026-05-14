@@ -1,12 +1,6 @@
 export const abi = [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "initialOwner",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -119,25 +113,8 @@ export const abi = [
     "type": "error"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableInvalidOwner",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
-    ],
-    "name": "OwnableUnauthorizedAccount",
+    "inputs": [],
+    "name": "ReentrancyGuardReentrantCall",
     "type": "error"
   },
   {
@@ -290,6 +267,25 @@ export const abi = [
         "internalType": "uint256",
         "name": "eventId",
         "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "organizer",
+        "type": "address"
+      }
+    ],
+    "name": "EventUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
       }
     ],
     "name": "InviteCodeUpdated",
@@ -313,18 +309,55 @@ export const abi = [
     "inputs": [
       {
         "indexed": true,
-        "internalType": "address",
-        "name": "previousOwner",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
       },
       {
         "indexed": true,
         "internalType": "address",
-        "name": "newOwner",
+        "name": "holder",
         "type": "address"
       }
     ],
-    "name": "OwnershipTransferred",
+    "name": "TicketBurned",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "ticketId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "verifier",
+        "type": "address"
+      }
+    ],
+    "name": "TicketCheckedIn",
     "type": "event"
   },
   {
@@ -350,6 +383,31 @@ export const abi = [
       }
     ],
     "name": "TicketMinted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "organizer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
+    "name": "TicketPaymentReleased",
     "type": "event"
   },
   {
@@ -513,6 +571,11 @@ export const abi = [
       {
         "internalType": "uint256",
         "name": "maxAttendees",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ticketPriceWei",
         "type": "uint256"
       },
       {
@@ -707,6 +770,11 @@ export const abi = [
         "type": "uint256"
       },
       {
+        "internalType": "uint256",
+        "name": "ticketPriceWei",
+        "type": "uint256"
+      },
+      {
         "internalType": "bool",
         "name": "isPrivate",
         "type": "bool"
@@ -806,6 +874,11 @@ export const abi = [
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "ticketPriceWei",
+            "type": "uint256"
+          },
+          {
             "internalType": "bool",
             "name": "isPrivate",
             "type": "bool"
@@ -829,6 +902,25 @@ export const abi = [
         "internalType": "struct EventNestTicket.Event",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getEventAttendees",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
       }
     ],
     "stateMutability": "view",
@@ -926,6 +1018,11 @@ export const abi = [
             "type": "uint256"
           },
           {
+            "internalType": "uint256",
+            "name": "ticketPriceWei",
+            "type": "uint256"
+          },
+          {
             "internalType": "bool",
             "name": "isPrivate",
             "type": "bool"
@@ -949,6 +1046,67 @@ export const abi = [
         "internalType": "struct EventNestTicket.Event",
         "name": "",
         "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTicketCount",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      }
+    ],
+    "name": "getTicketIdForAttendee",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "holder",
+        "type": "address"
+      }
+    ],
+    "name": "hasTicket",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -1033,7 +1191,7 @@ export const abi = [
         "type": "uint256"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -1044,19 +1202,6 @@ export const abi = [
         "internalType": "string",
         "name": "",
         "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -1082,8 +1227,19 @@ export const abi = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "renounceOwnership",
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "wallet",
+        "type": "address"
+      }
+    ],
+    "name": "removeFromWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1281,12 +1437,57 @@ export const abi = [
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "metadataURI",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "eventDate",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "maxAttendees",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ticketPriceWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "isPrivate",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresInviteCode",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresWhitelist",
+        "type": "bool"
       }
     ],
-    "name": "transferOwnership",
+    "name": "updateEvent",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

@@ -6,27 +6,27 @@ import { Instagram, Github, Twitter, Shield, Lock, Globe } from "lucide-react"
 const footerLinks = {
   events: [
     { name: "Browse Events", href: "/events" },
-    { name: "Private Events", href: "/events?type=private" },
-    { name: "Public Events", href: "/events?type=public" },
+    { name: "Gated Events", href: "/events" },
+    { name: "Public Events", href: "/events" },
     { name: "My Tickets", href: "/tickets" }
   ],
   create: [
     { name: "Create Event", href: "/dashboard/create" },
     { name: "Dashboard", href: "/dashboard" },
-    { name: "Analytics", href: "/dashboard/events" },
+    { name: "Analytics", href: "/dashboard/analytics" },
     { name: "Settings", href: "/dashboard/settings" }
   ],
   privacy: [
     { name: "How It Works", href: "/privacy" },
-    { name: "Fhenix Protocol", href: "#" },
-    { name: "Documentation", href: "#" },
-    { name: "GitHub", href: "#" }
+    { name: "Fhenix Protocol", href: "https://www.fhenix.io/" },
+    { name: "CoFHE Docs", href: "https://cofhe-docs.fhenix.zone/" },
+    { name: "Client SDK", href: "https://cofhe-docs.fhenix.zone/client-sdk/introduction/overview" }
   ],
   support: [
-    { name: "Help Center", href: "#" },
-    { name: "Contact Us", href: "#" },
-    { name: "Terms of Service", href: "#" },
-    { name: "Privacy Policy", href: "#" }
+    { name: "Help Center", href: "/privacy" },
+    { name: "Contact Us", href: "mailto:hello@eventnest.app" },
+    { name: "Terms of Service", href: "/privacy" },
+    { name: "Privacy Policy", href: "/privacy" }
   ]
 }
 
@@ -48,7 +48,7 @@ export function Footer() {
               <span className="gradient-text">Event</span>Nest
             </h2>
             <p className="text-sm text-[#666666] leading-relaxed mb-6">
-              Privacy-first decentralized event ticketing powered by Fhenix Fully Homomorphic Encryption.
+              Privacy-aware decentralized event ticketing with on-chain access control, paid NFT tickets, and QR entry validation.
             </p>
             <div className="flex gap-4">
               <a
@@ -136,16 +136,16 @@ export function Footer() {
         {/* Privacy Badge */}
         <div className="flex flex-wrap justify-center gap-6 mb-12 pb-8 border-b border-[#e5e5e5]">
           <div className="flex items-center gap-2 text-[#666666] text-sm">
-            <Shield className="w-4 h-4 text-[#6366f1]" />
-            <span>End-to-End Encrypted</span>
+            <Shield className="w-4 h-4 text-[#0f766e]" />
+            <span>Hashed Access</span>
           </div>
           <div className="flex items-center gap-2 text-[#666666] text-sm">
-            <Lock className="w-4 h-4 text-[#6366f1]" />
-            <span>Fhenix Powered</span>
+            <Lock className="w-4 h-4 text-[#0f766e]" />
+            <span>CoFHE Roadmap</span>
           </div>
           <div className="flex items-center gap-2 text-[#666666] text-sm">
-            <Globe className="w-4 h-4 text-[#6366f1]" />
-            <span>Decentralized</span>
+            <Globe className="w-4 h-4 text-[#0f766e]" />
+            <span>Sepolia Live</span>
           </div>
         </div>
 

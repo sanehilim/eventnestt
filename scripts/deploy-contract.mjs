@@ -8,6 +8,7 @@ import { compileContract } from "./compile-contract.mjs"
 const rootDir = process.cwd()
 const envFile = path.join(rootDir, ".env.local")
 const artifact = compileContract()
+const bytecode = artifact.bytecode.startsWith("0x") ? artifact.bytecode : `0x${artifact.bytecode}`
 
 const rawPrivateKey = process.env.PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY
 if (!rawPrivateKey) {
@@ -45,8 +46,7 @@ function updateEnvFile(entries) {
 
 const deploymentHash = await walletClient.deployContract({
   abi: artifact.abi,
-  bytecode: artifact.bytecode,
-  args: [account.address],
+  bytecode,
 })
 
 const receipt = await publicClient.waitForTransactionReceipt({ hash: deploymentHash })
@@ -59,6 +59,7 @@ updateEnvFile([
   ["NEXT_PUBLIC_RPC_URL", rpcUrl],
   ["NEXT_PUBLIC_SEPOLIA_RPC_URL", rpcUrl],
   ["NEXT_PUBLIC_CONTRACT_ADDRESS", receipt.contractAddress],
+  ["NEXT_PUBLIC_CONTRACT_DEPLOY_BLOCK", String(receipt.blockNumber)],
 ])
 
 console.log(`Deployer: ${account.address}`)

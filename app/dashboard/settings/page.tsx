@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Shield, Lock, Eye, EyeOff, Key, Database, Globe, Save, AlertCircle } from "lucide-react"
+import { Database, Key, Lock, Save, Shield } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
 import {
   defaultDashboardSettings,
@@ -29,223 +29,101 @@ export default function SettingsPage() {
   const handleSave = () => {
     saveDashboardSettings(settings, address)
     setIsSaved(true)
-    setTimeout(() => setIsSaved(false), 3000)
+    window.setTimeout(() => setIsSaved(false), 3000)
   }
 
   return (
-    <main className="min-h-screen bg-background grid-pattern">
+    <main className="min-h-screen bg-white">
       <Header />
 
       <div className="pt-28 pb-20">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
           <Link
             href="/dashboard"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary boty-transition mb-8"
+            className="inline-flex items-center gap-2 text-[#666666] hover:text-[#1a1a1a] boty-transition mb-8"
           >
             Back to Dashboard
           </Link>
 
-          <h1 className="font-serif text-4xl md:text-5xl text-foreground mb-4">Settings</h1>
-          <p className="text-lg text-muted-foreground mb-12">
-            Configure your default event form settings for this browser and wallet
+          <h1 className="text-4xl md:text-5xl text-[#1a1a1a] mb-4">Settings</h1>
+          <p className="text-lg text-[#666666] mb-12">
+            Configure the default access settings used when this wallet creates new events.
           </p>
 
           <div className="space-y-6">
-            <div className="bg-card rounded-3xl p-8 border border-border boty-shadow">
+            <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5] boty-shadow">
               <div className="flex items-center gap-3 mb-6">
-                <Shield className="w-6 h-6 text-primary" />
-                <h2 className="font-serif text-2xl text-foreground">Privacy Defaults</h2>
+                <Shield className="w-6 h-6 text-[#0f766e]" />
+                <h2 className="text-2xl text-[#1a1a1a]">Event Defaults</h2>
               </div>
 
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <Lock className="w-5 h-5 text-primary" />
-                    <div>
-                      <h3 className="font-medium text-foreground">Default to Private</h3>
-                      <p className="text-sm text-muted-foreground">New events are private by default</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, defaultPrivate: !settings.defaultPrivate })}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${
-                      settings.defaultPrivate ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.defaultPrivate ? "translate-x-7" : "translate-x-1"
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <Key className="w-5 h-5 text-primary" />
-                    <div>
-                      <h3 className="font-medium text-foreground">Require Invite Code</h3>
-                      <p className="text-sm text-muted-foreground">New private events require invite codes</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, requireInviteCode: !settings.requireInviteCode })}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${
-                      settings.requireInviteCode ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.requireInviteCode ? "translate-x-7" : "translate-x-1"
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <Database className="w-5 h-5 text-primary" />
-                    <div>
-                      <h3 className="font-medium text-foreground">Whitelist Only</h3>
-                      <p className="text-sm text-muted-foreground">Only approved wallets can register</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, requireWhitelist: !settings.requireWhitelist })}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${
-                      settings.requireWhitelist ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.requireWhitelist ? "translate-x-7" : "translate-x-1"
-                    }`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-card rounded-3xl p-8 border border-border boty-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <Eye className="w-6 h-6 text-primary" />
-                <h2 className="font-serif text-2xl text-foreground">Pricing & Visibility</h2>
-              </div>
-
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <EyeOff className="w-5 h-5 text-primary" />
-                    <div>
-                      <h3 className="font-medium text-foreground">Hide Pricing</h3>
-                      <p className="text-sm text-muted-foreground">Ticket prices hidden until verified</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, hidePricing: !settings.hidePricing })}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${
-                      settings.hidePricing ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.hidePricing ? "translate-x-7" : "translate-x-1"
-                    }`} />
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
-                  <div className="flex items-center gap-3">
-                    <Globe className="w-5 h-5 text-primary" />
-                    <div>
-                      <h3 className="font-medium text-foreground">Auto-Encrypt Metadata</h3>
-                      <p className="text-sm text-muted-foreground">Keep metadata private in your organizer workflow</p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setSettings({ ...settings, autoEncryptMetadata: !settings.autoEncryptMetadata })}
-                    className={`w-12 h-6 rounded-full relative transition-colors ${
-                      settings.autoEncryptMetadata ? "bg-primary" : "bg-border"
-                    }`}
-                  >
-                    <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                      settings.autoEncryptMetadata ? "translate-x-7" : "translate-x-1"
-                    }`} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-card rounded-3xl p-8 border border-border boty-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <AlertCircle className="w-6 h-6 text-primary" />
-                <h2 className="font-serif text-2xl text-foreground">Notifications</h2>
-              </div>
-
-              <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
-                <div className="flex items-center gap-3">
-                  <AlertCircle className="w-5 h-5 text-primary" />
-                  <div>
-                    <h3 className="font-medium text-foreground">Email Notifications</h3>
-                    <p className="text-sm text-muted-foreground">Get notified about ticket sales and registrations</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSettings({ ...settings, notifications: !settings.notifications })}
-                  className={`w-12 h-6 rounded-full relative transition-colors ${
-                    settings.notifications ? "bg-primary" : "bg-border"
-                  }`}
-                >
-                  <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                    settings.notifications ? "translate-x-7" : "translate-x-1"
-                  }`} />
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-card rounded-3xl p-8 border border-border boty-shadow">
-              <h2 className="font-serif text-2xl text-foreground mb-6">Connected Wallet</h2>
-              <ConnectButton.Custom>
-                {({ account, chain, openConnectModal, openAccountModal, openChainModal, mounted }) => (
-                  <div {...(!mounted && { "aria-hidden": true, style: { opacity: 0, pointerEvents: "none" } })}>
-                    {!mounted || !account ? (
-                      <button
-                        type="button"
-                        onClick={openConnectModal}
-                        className="w-full bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary"
-                      >
-                        Connect Wallet
-                      </button>
-                    ) : chain?.unsupported ? (
-                      <button
-                        type="button"
-                        onClick={openChainModal}
-                        className="w-full bg-destructive text-destructive-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition"
-                      >
-                        Wrong Network - Switch
-                      </button>
-                    ) : (
-                      <div className="flex items-center justify-between p-4 bg-secondary rounded-xl border border-border">
+              <div className="space-y-4">
+                {[
+                  {
+                    key: "defaultPrivate",
+                    title: "Default to Private",
+                    description: "New events start with controlled registration enabled.",
+                    icon: Lock,
+                  },
+                  {
+                    key: "requireInviteCode",
+                    title: "Require Invite Code",
+                    description: "New events require a hashed invite code before minting.",
+                    icon: Key,
+                  },
+                  {
+                    key: "requireWhitelist",
+                    title: "Whitelist Only",
+                    description: "New events require organizer-approved wallets.",
+                    icon: Database,
+                  },
+                ].map((item) => {
+                  const Icon = item.icon
+                  const key = item.key as keyof typeof settings
+                  return (
+                    <div
+                      key={item.key}
+                      className="flex items-center justify-between gap-4 rounded-lg border border-[#e5e5e5] bg-white p-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-[#0f766e]" />
                         <div>
-                          <p className="font-mono text-foreground">{account.displayName}</p>
-                          <p className="text-sm text-muted-foreground">{chain?.name}</p>
+                          <h3 className="font-medium text-[#1a1a1a]">{item.title}</h3>
+                          <p className="text-sm text-[#666666]">{item.description}</p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={openAccountModal}
-                          className="text-sm text-primary hover:text-primary/80 boty-transition"
-                        >
-                          Manage
-                        </button>
                       </div>
-                    )}
-                  </div>
-                )}
-              </ConnectButton.Custom>
+                      <button
+                        type="button"
+                        onClick={() => setSettings({ ...settings, [key]: !settings[key] })}
+                        className={`relative h-6 w-12 rounded-full transition-colors ${
+                          settings[key] ? "bg-[#0f766e]" : "bg-[#d4d4d4]"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                            settings[key] ? "translate-x-7" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <p className="mt-5 text-sm text-[#666666]">
+                These settings only prefill the create-event form. The deployed contract remains the source of truth for
+                invite-code, whitelist, payment, and ticket rules.
+              </p>
+            </div>
+
+            <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5] boty-shadow">
+              <h2 className="text-2xl text-[#1a1a1a] mb-6">Connected Wallet</h2>
+              <WalletConnectButton fullWidth />
             </div>
 
             <div className="flex items-center justify-end gap-4">
               {isSaved && (
-                <span className="text-sm text-primary flex items-center gap-2">
+                <span className="text-sm text-[#0f766e] flex items-center gap-2">
                   <Shield className="w-4 h-4" />
                   Settings saved in this browser
                 </span>
@@ -253,7 +131,7 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-primary/90 glow-primary"
+                className="inline-flex items-center gap-2 bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow"
               >
                 <Save className="w-4 h-4" />
                 Save Settings

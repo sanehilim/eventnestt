@@ -38,10 +38,10 @@ export default function EventsListPage() {
           </div>
 
           {/* Events Table */}
-          <div className="bg-card rounded-3xl border border-border overflow-hidden boty-shadow">
+          <div className="bg-card rounded-xl border border-border overflow-hidden boty-shadow">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 text-[#6366f1] animate-spin" />
+                <Loader2 className="w-8 h-8 text-[#0f766e] animate-spin" />
               </div>
             ) : (
             <div className="overflow-x-auto">
@@ -57,7 +57,10 @@ export default function EventsListPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {events.map((event) => (
+                  {events.map((event) => {
+                    const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
+
+                    return (
                     <tr key={event.id} className="hover:bg-secondary/30 boty-transition">
                       <td className="px-6 py-4">
                         <div>
@@ -86,10 +89,10 @@ export default function EventsListPage() {
                         {event.ticketPrice}
                       </td>
                       <td className="px-6 py-4">
-                        {event.isPrivate ? (
+                        {isGated ? (
                           <span className="inline-flex items-center gap-1.5 text-sm text-primary">
                             <Lock className="w-4 h-4" />
-                            Private
+                            Gated
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -117,13 +120,14 @@ export default function EventsListPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
             )}
 
-            {events.length === 0 && (
+            {!loading && events.length === 0 && (
               <div className="text-center py-20">
                 <Calendar className="w-16 h-16 text-muted-foreground/50 mx-auto mb-4" />
                 <h3 className="font-serif text-2xl text-foreground mb-2">No events yet</h3>

@@ -6,23 +6,23 @@ import { Shield, Lock, Eye, Zap } from "lucide-react"
 const badges = [
   {
     icon: Shield,
-    title: "Encrypted Access",
-    description: "Zero-knowledge proofs"
+    title: "Hashed Access",
+    description: "Invite codes stay off-chain"
   },
   {
     icon: Lock,
-    title: "Private Data",
-    description: "On-chain confidentiality"
+    title: "On-Chain Tickets",
+    description: "Transferable ERC721 passes"
   },
   {
     icon: Eye,
-    title: "Selective Reveal",
-    description: "You control what others see"
+    title: "Wallet Gating",
+    description: "Allowlist-ready events"
   },
   {
     icon: Zap,
-    title: "Fhenix Powered",
-    description: "Fully homomorphic encryption"
+    title: "CoFHE Roadmap",
+    description: "Sepolia FHE path documented"
   }
 ]
 
@@ -69,7 +69,7 @@ export function TrustBadges() {
               }`}
               style={{ transitionDelay: `${index * 150}ms` }}
             >
-              <badge.icon className="text-[#6366f1] mb-4 mx-auto size-12" strokeWidth={1} />
+              <badge.icon className="text-[#0f766e] mb-4 mx-auto size-12" strokeWidth={1} />
               <h3 className="text-2xl text-[#1a1a1a] mb-2">{badge.title}</h3>
               <p className="text-sm text-[#666666]">{badge.description}</p>
             </div>

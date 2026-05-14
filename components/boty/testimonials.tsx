@@ -9,7 +9,7 @@ const testimonials = [
     name: "Alex Chen",
     location: "San Francisco",
     rating: 5,
-    text: "EventNest transformed how we handle VIP guest lists. Our pricing tiers stay completely private while being verifiable on-chain.",
+    text: "EventNest transformed how we handle VIP guest lists. Wallet gating and paid NFT tickets finally work in one clean flow.",
     event: "Web3 Summit"
   },
   {
@@ -17,7 +17,7 @@ const testimonials = [
     name: "Sarah Miller",
     location: "Berlin",
     rating: 5,
-    text: "Finally, an event platform that respects privacy. The encrypted access control is seamless for attendees while being bulletproof.",
+    text: "Finally, an event platform that respects privacy. The hashed invite-code flow is seamless for attendees and easy to audit.",
     event: "Underground Rave"
   },
   {
@@ -25,7 +25,7 @@ const testimonials = [
     name: "Marcus Johnson",
     location: "London",
     rating: 5,
-    text: "The Fhenix integration is incredible. Our exclusive pre-sale data stayed private, and only authorized wallets could access it.",
+    text: "The Fhenix roadmap is clear, and the current allowlist tooling already handles our exclusive pre-sale access.",
     event: "DeFi Conference"
   },
   {
@@ -33,7 +33,7 @@ const testimonials = [
     name: "Emma Watson",
     location: "New York",
     rating: 5,
-    text: "As an event organizer, the ability to hide pricing tiers and offer private discounts has been a game-changer for our premium events.",
+    text: "As an event organizer, the ability to enforce payment, capacity, and wallet eligibility on-chain is a game-changer.",
     event: "Crypto Art Expo"
   },
   {
@@ -41,7 +41,7 @@ const testimonials = [
     name: "David Park",
     location: "Tokyo",
     rating: 5,
-    text: "The selective disclosure feature lets us reward loyal attendees without revealing their full purchase history to others.",
+    text: "Ticket transfers and QR check-in give us a real operational workflow instead of another spreadsheet.",
     event: "NFT Launch Party"
   },
   {
@@ -49,7 +49,7 @@ const testimonials = [
     name: "Lisa Thompson",
     location: "Miami",
     rating: 5,
-    text: "Privacy-first by design, not by policy. The encryption happens automatically - attendees dont need to do anything special.",
+    text: "Privacy-first by design, not by policy. Attendees just connect a wallet, enter the invite code if needed, and mint.",
     event: "VIP Gala"
   },
   {
@@ -57,7 +57,7 @@ const testimonials = [
     name: "James Wilson",
     location: "Dubai",
     rating: 5,
-    text: "EventNest handles our most exclusive events with complete confidentiality. The technology is invisible but the results speak for themselves.",
+    text: "EventNest handles our most exclusive events with clearer wallet gating and less manual coordination. The workflow is simple and the results speak for themselves.",
     event: "VIP Gala"
   },
   {
@@ -73,13 +73,13 @@ const testimonials = [
     name: "Ryan Lee",
     location: "Singapore",
     rating: 5,
-    text: "Built on Fhenix, powered by privacy. This is exactly what Web3 events needed - real confidentiality, not just pseudo-anonymity.",
+    text: "Built with Fhenix in mind and usable today on Sepolia. This is exactly what Web3 events needed.",
     event: "Web3 Summit"
   }
 ]
 
 const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] }) => (
-  <div className="rounded-3xl p-6 bg-white mb-4 flex-shrink-0 border border-[#e5e5e5]"
+  <div className="rounded-xl p-6 bg-white mb-4 flex-shrink-0 border border-[#e5e5e5]"
     style={{
       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
     }}
@@ -102,7 +102,7 @@ const TestimonialCard = ({ testimonial }: { testimonial: typeof testimonials[0] 
         <p className="text-[#1a1a1a] text-sm font-bold">{testimonial.name}</p>
         <p className="text-xs text-[#666666]">{testimonial.location}</p>
       </div>
-      <span className="text-xs tracking-wide text-[#6366f1] bg-[#6366f1]/10 px-2 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
+      <span className="text-xs tracking-wide text-[#0f766e] bg-[#0f766e]/10 px-2 py-1 rounded-full whitespace-nowrap flex items-center gap-1">
         <Lock className="w-3 h-3" />
         {testimonial.event}
       </span>
@@ -145,7 +145,7 @@ export function Testimonials() {
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         {/* Header */}
         <div ref={headerRef} className="text-center mb-16">
-          <span className={`text-sm tracking-[0.3em] uppercase text-[#6366f1] mb-4 block ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.2s', animationFillMode: 'forwards' } : {}}>
+          <span className={`text-sm tracking-[0.3em] uppercase text-[#0f766e] mb-4 block ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.2s', animationFillMode: 'forwards' } : {}}>
             Testimonials
           </span>
           <h2 className={`text-4xl leading-tight text-[#1a1a1a] text-balance md:text-7xl ${headerVisible ? 'animate-blur-in opacity-0' : 'opacity-0'}`} style={headerVisible ? { animationDelay: '0.4s', animationFillMode: 'forwards' } : {}}>

@@ -11,9 +11,9 @@ const geistSans = Geist({
 })
 
 export const metadata: Metadata = {
-  title: 'EventNest - Privacy-First Event Ticketing on Fhenix',
-  description: 'Create and attend events with complete privacy. Your data stays encrypted on-chain, powered by Fhenix Fully Homomorphic Encryption.',
-  keywords: ['events', 'tickets', 'privacy', 'web3', 'blockchain', 'fhenix', 'nft', 'ticketing', 'encrypted'],
+  title: 'EventNest - On-Chain Event Ticketing',
+  description: 'Create, gate, sell, transfer, and check in NFT tickets with hashed invite codes and wallet allowlists on Sepolia. Built with a CoFHE/Fhenix privacy roadmap.',
+  keywords: ['events', 'tickets', 'privacy', 'web3', 'blockchain', 'fhenix', 'nft', 'ticketing', 'allowlist'],
   icons: {
     icon: [
       {
@@ -40,7 +40,7 @@ export default function RootLayout({
         <Web3Provider>
           {children}
         </Web3Provider>
-        <Analytics />
+        {process.env.VERCEL === '1' && <Analytics />}
       </body>
     </html>
   )

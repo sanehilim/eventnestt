@@ -1,25 +1,15 @@
 "use client"
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
-import { Calendar, MapPin, Users, Ticket, Eye, EyeOff, Lock, SlidersHorizontal, X, Loader2 } from "lucide-react"
+import { Calendar, MapPin, Users, Ticket, EyeOff, Lock, SlidersHorizontal, X, Loader2 } from "lucide-react"
 import { useEvents, type Event } from "@/hooks/use-events"
 
 type EventCategory = "all" | "hackathon" | "conference" | "vip" | "workshop" | "meetup"
 type EventPrivacy = "all" | "public" | "private"
-
-const EVENT_IMAGES = [
-  "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-  "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&q=80",
-  "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-  "https://images.unsplash.com/photo-1639762681485-074b7f938bd0?w=800&q=80",
-  "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80",
-  "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80",
-  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&q=80",
-  "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&q=80",
-]
 
 const categories = [
   { value: "all" as EventCategory, label: "All Events" },
@@ -54,9 +44,10 @@ export default function EventsPage() {
 
   const filteredEvents = events.filter(event => {
     const categoryMatch = selectedCategory === "all" || event.category === selectedCategory
+    const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
     const privacyMatch = selectedPrivacy === "all" ||
-      (selectedPrivacy === "private" && event.isPrivate) ||
-      (selectedPrivacy === "public" && !event.isPrivate)
+      (selectedPrivacy === "private" && isGated) ||
+      (selectedPrivacy === "public" && !isGated)
     return categoryMatch && privacyMatch
   })
 
@@ -98,7 +89,7 @@ export default function EventsPage() {
         <Header />
         <div className="pt-28 pb-20">
           <div className="flex items-center justify-center h-96">
-            <Loader2 className="w-8 h-8 text-[#6366f1] animate-spin" />
+            <Loader2 className="w-8 h-8 text-[#0f766e] animate-spin" />
           </div>
         </div>
         <Footer />
@@ -114,14 +105,14 @@ export default function EventsPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {/* Header */}
           <div className="text-center mb-12">
-            <span className="text-sm tracking-[0.3em] uppercase text-[#6366f1] mb-4 block">
+            <span className="text-sm tracking-[0.3em] uppercase text-[#0f766e] mb-4 block">
               Blockchain Events
             </span>
             <h1 className="text-4xl md:text-5xl lg:text-6xl text-[#1a1a1a] mb-4 text-balance">
-              Public & Private Events
+              Public & Gated Events
             </h1>
             <p className="text-lg text-[#666666] max-w-md mx-auto">
-              Discover privacy-first Web3 events powered by Fhenix encryption
+              Discover privacy-first Web3 events with hashed access controls and a CoFHE-ready roadmap
             </p>
           </div>
 
@@ -163,7 +154,7 @@ export default function EventsPage() {
                     onClick={() => setSelectedPrivacy(filter.value)}
                     className={`px-4 py-2 rounded-full text-sm capitalize flex items-center gap-1.5 boty-transition ${
                       selectedPrivacy === filter.value
-                        ? "bg-[#6366f1] text-white"
+                        ? "bg-[#0f766e] text-white"
                         : "bg-transparent text-[#666666] hover:text-[#1a1a1a]"
                     }`}
                   >
@@ -204,9 +195,9 @@ export default function EventsPage() {
                         setSelectedCategory(category.value)
                         setShowFilters(false)
                       }}
-                      className={`w-full px-6 py-4 rounded-2xl text-left capitalize boty-transition ${
+                      className={`w-full px-6 py-4 rounded-lg text-left capitalize boty-transition ${
                         selectedCategory === category.value
-                          ? "bg-[#6366f1] text-white"
+                          ? "bg-[#0f766e] text-white"
                           : "bg-[#f5f5f5] text-[#1a1a1a]"
                       }`}
                     >
@@ -224,12 +215,7 @@ export default function EventsPage() {
             className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
           >
             {filteredEvents.map((event, index) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                index={index}
-                isVisible={isVisible}
-              />
+              <EventCard key={event.id} event={event} index={index} isVisible={isVisible} />
             ))}
           </div>
 
@@ -258,6 +244,7 @@ function EventCard({
   isVisible: boolean
 }) {
   const [imageLoaded, setImageLoaded] = useState(false)
+  const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
 
   return (
     <Link
@@ -267,17 +254,17 @@ function EventCard({
       }`}
       style={{ transitionDelay: `${index * 80}ms` }}
     >
-      <div className="bg-white rounded-3xl overflow-hidden boty-shadow boty-transition group-hover:scale-[1.02] border border-[#e5e5e5]">
+      <div className="bg-white rounded-xl overflow-hidden boty-shadow boty-transition group-hover:scale-[1.02] border border-[#e5e5e5]">
         {/* Image */}
         <div className="relative aspect-video bg-[#f5f5f5] overflow-hidden">
           <div
-            className={`absolute inset-0 bg-gradient-to-br from-[#6366f1]/10 via-[#f5f5f5] to-[#f5f5f5] animate-pulse transition-opacity duration-500 ${
+            className={`absolute inset-0 bg-gradient-to-br from-[#0f766e]/10 via-[#f5f5f5] to-[#f5f5f5] animate-pulse transition-opacity duration-500 ${
               imageLoaded ? "opacity-0" : "opacity-100"
             }`}
           />
 
           <img
-            src={EVENT_IMAGES[index % EVENT_IMAGES.length]}
+            src={event.image}
             alt={event.name}
             className={`w-full h-full object-cover boty-transition group-hover:scale-105 transition-opacity duration-500 ${
               imageLoaded ? "opacity-100" : "opacity-0"
@@ -287,16 +274,16 @@ function EventCard({
 
           {/* Badge */}
           <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs tracking-wide bg-white/90 backdrop-blur-sm text-[#1a1a1a] flex items-center gap-1.5">
-            {event.isPrivate ? (
-              <Lock className="w-3 h-3 text-[#6366f1]" />
+            {isGated ? (
+              <Lock className="w-3 h-3 text-[#0f766e]" />
             ) : (
               <EyeOff className="w-3 h-3 text-[#666666]" />
             )}
-            {event.isPrivate ? "Private" : "Public"}
+            {isGated ? "Gated" : "Public"}
           </span>
 
           {/* Category */}
-          <span className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs tracking-wide bg-[#6366f1] text-white capitalize">
+          <span className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs tracking-wide bg-[#0f766e] text-white capitalize">
             {event.category}
           </span>
         </div>
@@ -309,25 +296,25 @@ function EventCard({
           {/* Meta */}
           <div className="space-y-2 text-sm text-[#666666] mb-4">
             <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-[#6366f1]/70" />
+              <Calendar className="w-4 h-4 text-[#0f766e]/70" />
               <span>{formatDate(event.eventDate)}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#6366f1]/70" />
+              <MapPin className="w-4 h-4 text-[#0f766e]/70" />
               <span>{event.location}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-[#6366f1]/70" />
+              <Users className="w-4 h-4 text-[#0f766e]/70" />
               <span>{event.totalTicketsSold}/{event.maxAttendees} attendees</span>
             </div>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Ticket className="w-4 h-4 text-[#6366f1]" />
+              <Ticket className="w-4 h-4 text-[#0f766e]" />
               <span className="text-sm font-medium text-[#1a1a1a]">{event.ticketPrice}</span>
             </div>
-            <span className="text-sm text-[#6366f1] group-hover:translate-x-1 boty-transition">
+            <span className="text-sm text-[#0f766e] group-hover:translate-x-1 boty-transition">
               View Details
             </span>
           </div>

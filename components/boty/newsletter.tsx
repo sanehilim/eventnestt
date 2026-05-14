@@ -20,8 +20,8 @@ export function Newsletter() {
     <section className="py-24 bg-[#f5f5f5] border-t border-[#e5e5e5]">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#6366f1]/10 mb-6">
-            <Lock className="w-8 h-8 text-[#6366f1]" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#0f766e]/10 mb-6">
+            <Lock className="w-8 h-8 text-[#0f766e]" />
           </div>
           <h2 className="text-4xl md:text-5xl text-[#1a1a1a] mb-4">
             Stay Updated
@@ -39,7 +39,7 @@ export function Newsletter() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-white border border-[#e5e5e5] rounded-full px-12 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                className="w-full bg-white border border-[#e5e5e5] rounded-full px-12 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
               />
             </div>
             <button
@@ -69,7 +69,7 @@ export function Newsletter() {
           </form>
 
           {status === "success" && (
-            <p className="text-sm text-[#6366f1] mt-4">
+            <p className="text-sm text-[#0f766e] mt-4">
               You are subscribed. Welcome to the privacy-first community.
             </p>
           )}

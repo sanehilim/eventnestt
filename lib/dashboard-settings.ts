@@ -2,18 +2,12 @@ export type DashboardSettings = {
   defaultPrivate: boolean
   requireInviteCode: boolean
   requireWhitelist: boolean
-  hidePricing: boolean
-  autoEncryptMetadata: boolean
-  notifications: boolean
 }
 
 export const defaultDashboardSettings: DashboardSettings = {
   defaultPrivate: true,
   requireInviteCode: true,
   requireWhitelist: false,
-  hidePricing: true,
-  autoEncryptMetadata: true,
-  notifications: true,
 }
 
 export function getDashboardSettingsStorageKey(address?: string) {

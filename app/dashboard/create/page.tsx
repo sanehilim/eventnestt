@@ -5,10 +5,11 @@ import Link from "next/link"
 import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
 import { useCreateEvent } from "@/hooks/use-events"
 import { readDashboardSettings } from "@/lib/dashboard-settings"
+import { APP_CHAIN } from "@/lib/onchain"
 
 const steps = [
   { id: 1, name: "Basic Info", icon: Calendar },
@@ -24,7 +25,8 @@ export default function CreateEventPage() {
   const [txHash, setTxHash] = useState<string>("")
   const [generatedInviteCode, setGeneratedInviteCode] = useState("")
   const [submitError, setSubmitError] = useState("")
-  const { isConnected, address } = useAccount()
+  const { isConnected, address, chain } = useAccount()
+  const isWrongChain = isConnected && chain?.id !== APP_CHAIN.id
   const { createEvent } = useCreateEvent()
 
   const [formData, setFormData] = useState({
@@ -38,8 +40,11 @@ export default function CreateEventPage() {
     requiresWhitelist: false,
     maxAttendees: 100,
     ticketPrice: "",
-    earlyBirdDiscount: ""
+    image: ""
   })
+  const privateEventMissingAccessRule =
+    formData.isPrivate && !formData.requiresInviteCode && !formData.requiresWhitelist
+  const cannotContinue = currentStep === 2 && privateEventMissingAccessRule
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -58,6 +63,10 @@ export default function CreateEventPage() {
   const handleSubmit = async () => {
     const eventTimestamp = new Date(formData.date).getTime()
     if (!formData.name.trim() || !formData.date || Number.isNaN(eventTimestamp)) {
+      return
+    }
+    if (privateEventMissingAccessRule) {
+      setSubmitError("Private events must require an invite code or whitelist.")
       return
     }
 
@@ -79,6 +88,7 @@ export default function CreateEventPage() {
         ticketPrice: formData.ticketPrice,
         location: formData.location,
         category: formData.category,
+        image: formData.image,
         inviteCode,
       })
       setTxHash(hash)
@@ -115,15 +125,15 @@ export default function CreateEventPage() {
                 Invite code: <span className="font-mono">{generatedInviteCode}</span>
               </p>
             )}
-            <div className="bg-[#f5f5f5] rounded-2xl p-6 border border-[#e5e5e5] mb-8 text-left">
+            <div className="bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5] mb-8 text-left">
               <div className="flex items-center gap-2 mb-4">
-                <Shield className="w-5 h-5 text-[#6366f1]" />
+                <Shield className="w-5 h-5 text-[#0f766e]" />
                 <span className="font-medium text-[#1a1a1a]">Access Summary</span>
               </div>
               <ul className="space-y-2 text-sm text-[#666666]">
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
-                  Event deployed successfully on Ethereum Sepolia
+                  Event deployed successfully on {APP_CHAIN.name}
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
@@ -187,20 +197,20 @@ export default function CreateEventPage() {
           <div className="flex items-center justify-between mb-12 relative">
             <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-[#e5e5e5] -translate-y-1/2" />
             <div
-              className="absolute top-1/2 left-0 h-0.5 bg-[#6366f1] -translate-y-1/2 transition-all duration-500"
+              className="absolute top-1/2 left-0 h-0.5 bg-[#0f766e] -translate-y-1/2 transition-all duration-500"
               style={{ width: `${((currentStep - 1) / 3) * 100}%` }}
             />
             {steps.map((step) => (
               <div
                 key={step.id}
                 className={`relative z-10 flex flex-col items-center ${
-                  currentStep >= step.id ? "text-[#6366f1]" : "text-[#666666]"
+                  currentStep >= step.id ? "text-[#0f766e]" : "text-[#666666]"
                 }`}
               >
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
                     currentStep >= step.id
-                      ? "bg-[#6366f1] border-[#6366f1] text-white"
+                      ? "bg-[#0f766e] border-[#0f766e] text-white"
                       : "bg-white border-[#e5e5e5]"
                   }`}
                 >
@@ -216,7 +226,7 @@ export default function CreateEventPage() {
           </div>
 
           {/* Form */}
-          <div className="bg-[#f5f5f5] rounded-3xl p-8 border border-[#e5e5e5] boty-shadow">
+          <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5] boty-shadow">
             {/* Step 1: Basic Info */}
             {currentStep === 1 && (
               <div className="space-y-6">
@@ -229,7 +239,7 @@ export default function CreateEventPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="ETH Global Bangkok"
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
                   />
                 </div>
 
@@ -240,7 +250,7 @@ export default function CreateEventPage() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Describe your event..."
                     rows={4}
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition resize-none"
+                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition resize-none"
                   />
                 </div>
 
@@ -251,7 +261,7 @@ export default function CreateEventPage() {
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                      className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
                     />
                   </div>
                   <div>
@@ -259,7 +269,7 @@ export default function CreateEventPage() {
                     <select
                       value={formData.category}
                       onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                      className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
                     >
                       <option value="hackathon">Hackathon</option>
                       <option value="conference">Conference</option>
@@ -276,7 +286,18 @@ export default function CreateEventPage() {
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="Bangkok, Thailand or Remote"
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Image URL</label>
+                  <input
+                    type="url"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    placeholder="https://..."
+                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
                   />
                 </div>
 
@@ -287,7 +308,7 @@ export default function CreateEventPage() {
                     value={formData.maxAttendees}
                     onChange={(e) => setFormData({ ...formData, maxAttendees: parseInt(e.target.value) || 0 })}
                     min="1"
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
                   />
                 </div>
               </div>
@@ -301,20 +322,20 @@ export default function CreateEventPage() {
                   Choose how private your event access controls should be. These rules are enforced by your deployed smart contract.
                 </p>
 
-                <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5]">
+                <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <Lock className="w-6 h-6 text-[#6366f1]" />
+                      <Lock className="w-6 h-6 text-[#0f766e]" />
                       <div>
                         <h3 className="font-medium text-[#1a1a1a]">Private Event</h3>
-                        <p className="text-sm text-[#666666]">Event details hidden from public view</p>
+                        <p className="text-sm text-[#666666]">Registration is controlled by invite and whitelist rules</p>
                       </div>
                     </div>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, isPrivate: !formData.isPrivate })}
                       className={`w-12 h-6 rounded-full relative transition-colors ${
-                        formData.isPrivate ? "bg-[#6366f1]" : "bg-[#e5e5e5]"
+                        formData.isPrivate ? "bg-[#0f766e]" : "bg-[#e5e5e5]"
                       }`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
@@ -324,10 +345,10 @@ export default function CreateEventPage() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5]">
+                <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <Shield className="w-6 h-6 text-[#6366f1]" />
+                      <Shield className="w-6 h-6 text-[#0f766e]" />
                       <div>
                         <h3 className="font-medium text-[#1a1a1a]">Invite Code Required</h3>
                         <p className="text-sm text-[#666666]">Attendees need a secret code to access</p>
@@ -337,7 +358,7 @@ export default function CreateEventPage() {
                       type="button"
                       onClick={() => setFormData({ ...formData, requiresInviteCode: !formData.requiresInviteCode })}
                       className={`w-12 h-6 rounded-full relative transition-colors ${
-                        formData.requiresInviteCode ? "bg-[#6366f1]" : "bg-[#e5e5e5]"
+                        formData.requiresInviteCode ? "bg-[#0f766e]" : "bg-[#e5e5e5]"
                       }`}
                     >
                       <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
@@ -347,15 +368,43 @@ export default function CreateEventPage() {
                   </div>
                 </div>
 
-                <div className="bg-[#6366f1]/10 rounded-2xl p-6 border border-[#6366f1]/20">
+                <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Shield className="w-6 h-6 text-[#0f766e]" />
+                      <div>
+                        <h3 className="font-medium text-[#1a1a1a]">Whitelist Only</h3>
+                        <p className="text-sm text-[#666666]">Only approved wallets can mint tickets</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, requiresWhitelist: !formData.requiresWhitelist })}
+                      className={`w-12 h-6 rounded-full relative transition-colors ${
+                        formData.requiresWhitelist ? "bg-[#0f766e]" : "bg-[#e5e5e5]"
+                      }`}
+                    >
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        formData.requiresWhitelist ? "translate-x-7" : "translate-x-1"
+                      }`} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-[#0f766e]/10 rounded-lg p-6 border border-[#0f766e]/20">
                   <div className="flex items-center gap-3 mb-2">
-                    <Shield className="w-5 h-5 text-[#6366f1]" />
-                    <span className="font-medium text-[#6366f1]">On-Chain Access Rules</span>
+                    <Shield className="w-5 h-5 text-[#0f766e]" />
+                    <span className="font-medium text-[#0f766e]">On-Chain Access Rules</span>
                   </div>
                   <p className="text-sm text-[#666666]">
-                    Your access settings are stored on-chain and enforced when attendees register.
+                    Invite-code and whitelist settings are stored on-chain and enforced when attendees register.
                   </p>
                 </div>
+                {privateEventMissingAccessRule && (
+                  <p className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] px-4 py-3 text-sm text-[#92400e]">
+                    Private events must enable an invite code or whitelist before they can be deployed.
+                  </p>
+                )}
               </div>
             )}
 
@@ -371,7 +420,7 @@ export default function CreateEventPage() {
                     value={formData.ticketPrice}
                     onChange={(e) => setFormData({ ...formData, ticketPrice: e.target.value })}
                     placeholder="0.05"
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#6366f1]/50 boty-transition"
+                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
                   />
                   <p className="text-xs text-[#999999] mt-2">
                     Leave empty for free events.
@@ -385,7 +434,7 @@ export default function CreateEventPage() {
               <div className="space-y-6">
                 <h2 className="text-2xl text-[#1a1a1a] mb-6">Review & Deploy</h2>
 
-                <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5]">
+                <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">
                   <h3 className="font-medium text-[#1a1a1a] mb-4">Event Details</h3>
                   <dl className="space-y-3 text-sm">
                     <div className="flex justify-between">
@@ -406,78 +455,66 @@ export default function CreateEventPage() {
                     </div>
                     <div className="flex justify-between">
                       <dt className="text-[#666666]">Ticket Price</dt>
-                      <dd className="text-[#6366f1]">{formData.ticketPrice ? `${formData.ticketPrice} ETH` : "Free"}</dd>
+                      <dd className="text-[#0f766e]">{formData.ticketPrice ? `${formData.ticketPrice} ETH` : "Free"}</dd>
+                    </div>
+                    <div className="flex justify-between gap-4">
+                      <dt className="text-[#666666]">Image</dt>
+                      <dd className="text-[#1a1a1a] truncate">{formData.image || "Default event image"}</dd>
                     </div>
                   </dl>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5]">
+                <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">
                   <h3 className="font-medium text-[#1a1a1a] mb-4">Privacy Configuration</h3>
                   <ul className="space-y-3">
                     <li className="flex items-center gap-2 text-sm">
                       {formData.isPrivate ? (
-                        <Lock className="w-4 h-4 text-[#6366f1]" />
+                        <Lock className="w-4 h-4 text-[#0f766e]" />
                       ) : (
                         <EyeOff className="w-4 h-4 text-[#666666]" />
                       )}
-                      <span className={formData.isPrivate ? "text-[#6366f1]" : "text-[#666666]"}>
+                      <span className={formData.isPrivate ? "text-[#0f766e]" : "text-[#666666]"}>
                         {formData.isPrivate ? "Private Event" : "Public Event"}
                       </span>
                     </li>
                     <li className="flex items-center gap-2 text-sm">
                       {formData.requiresInviteCode ? (
-                        <Shield className="w-4 h-4 text-[#6366f1]" />
+                        <Shield className="w-4 h-4 text-[#0f766e]" />
                       ) : (
                         <Shield className="w-4 h-4 text-[#666666]" />
                       )}
-                      <span className={formData.requiresInviteCode ? "text-[#6366f1]" : "text-[#666666]"}>
+                      <span className={formData.requiresInviteCode ? "text-[#0f766e]" : "text-[#666666]"}>
                         {formData.requiresInviteCode ? "Invite Code Required" : "No Invite Code"}
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-2 text-sm">
+                      <Shield className={`w-4 h-4 ${formData.requiresWhitelist ? "text-[#0f766e]" : "text-[#666666]"}`} />
+                      <span className={formData.requiresWhitelist ? "text-[#0f766e]" : "text-[#666666]"}>
+                        {formData.requiresWhitelist ? "Whitelist Required" : "No Whitelist"}
                       </span>
                     </li>
                   </ul>
                 </div>
 
-                <ConnectButton.Custom>
-                  {({ account, chain, openConnectModal, openChainModal, mounted }) => (
-                    <div className={!mounted ? "opacity-0 pointer-events-none" : ""}>
-                      {!mounted || !account ? (
-                        <button
-                          type="button"
-                          onClick={openConnectModal}
-                          className="w-full bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#333] boty-shadow"
-                        >
-                          Connect Wallet to Deploy
-                        </button>
-                      ) : chain?.unsupported ? (
-                        <button
-                          type="button"
-                          onClick={openChainModal}
-                          className="w-full bg-[#ef4444] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition"
-                        >
-                          Wrong Network
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleSubmit}
-                          disabled={isSubmitting || !formData.name.trim() || !formData.date}
-                          className="w-full bg-[#6366f1] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#5558e3] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
-                        >
-                          {isSubmitting ? (
-                            <>
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                              Deploying Contract...
-                            </>
-                          ) : (
-                            <>
-                              Deploy Event Contract
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </ConnectButton.Custom>
+                {!isConnected || isWrongChain ? (
+                  <WalletConnectButton label="Connect Wallet to Deploy" fullWidth />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || !formData.name.trim() || !formData.date || privateEventMissingAccessRule}
+                    className="w-full bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Creating Event...
+                      </>
+                    ) : (
+                      <>Create Event On-Chain</>
+                    )}
+                  </button>
+                )}
 
                 {submitError && (
                   <p className="text-sm text-[#ef4444] mt-4 text-center">{submitError}</p>
@@ -501,7 +538,8 @@ export default function CreateEventPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(Math.min(4, currentStep + 1))}
-                  className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 rounded-full text-sm font-medium boty-transition hover:bg-[#333]"
+                  disabled={cannotContinue}
+                  className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 rounded-full text-sm font-medium boty-transition hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
                   <ArrowRight className="w-4 h-4" />

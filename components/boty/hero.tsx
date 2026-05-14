@@ -5,7 +5,7 @@ import { ArrowRight, Shield } from "lucide-react"
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-[#f5f5f5]">
+    <section className="relative min-h-[88vh] flex items-center overflow-hidden bg-[#f5f5f5]">
       {/* Background Video */}
       <div className="absolute inset-0">
         <video
@@ -21,21 +21,21 @@ export function Hero() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 w-full pt-20 mr-14 lg:mr-0">
+      <div className="relative z-10 w-full pt-20">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="w-full lg:max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
-            <span className="text-sm uppercase mb-6 block text-[#6366f1] animate-blur-in opacity-0 tracking-normal flex items-center gap-2 justify-center lg:justify-start" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+            <span className="text-sm uppercase mb-6 block text-[#0f766e] animate-blur-in opacity-0 tracking-normal flex items-center gap-2 justify-center lg:justify-start" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
               <Shield className="w-4 h-4" />
               Privacy-First Event Ticketing
             </span>
-            <h2 className="text-5xl md:text-6xl lg:text-7xl leading-[1.1] mb-6 text-balance text-[#1a1a1a]">
+            <h1 className="text-5xl md:text-6xl lg:text-7xl leading-[1.1] mb-6 text-balance text-[#1a1a1a]">
               <span className="block animate-blur-in opacity-0 font-semibold" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
                 <span className="gradient-text">EventNest</span>
               </span>
-              <span className="block animate-blur-in opacity-0 font-semibold xl:text-9xl text-7xl" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>Private. Secure.</span>
-            </h2>
+              <span className="block animate-blur-in opacity-0 font-semibold text-5xl md:text-7xl" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>On-chain event tickets</span>
+            </h1>
             <p className="text-lg leading-relaxed mb-10 max-w-md mx-auto lg:mx-0 text-[#666666] animate-blur-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
-              Create and attend events with complete privacy. Your data stays encrypted on-chain, powered by Fhenix Fully Homomorphic Encryption.
+              Create public or gated events with paid NFT tickets, invite codes, wallet allowlists, QR entry validation, and Fhenix-aligned privacy controls.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-blur-in opacity-0" style={{ animationDelay: '1s', animationFillMode: 'forwards' }}>
               <Link

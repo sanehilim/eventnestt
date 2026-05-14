@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
-import { ConnectButton } from "@rainbow-me/rainbowkit"
+import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
 import { User, Mail, Wallet, Key, ExternalLink, Copy, Check } from "lucide-react"
 import { useState } from "react"
@@ -29,26 +29,26 @@ export default function AccountPage() {
           <h1 className="text-4xl md:text-5xl text-[#1a1a1a] mb-8">Account</h1>
 
           {!isConnected ? (
-            <div className="bg-[#f5f5f5] rounded-3xl p-8 border border-[#e5e5e5] text-center">
+            <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5] text-center">
               <User className="w-16 h-16 text-[#666666] mx-auto mb-4" />
               <h2 className="text-2xl text-[#1a1a1a] mb-2">Connect Your Wallet</h2>
               <p className="text-[#666666] mb-6">Connect your wallet to view your account details and tickets.</p>
-              <ConnectButton />
+              <WalletConnectButton />
             </div>
           ) : (
             <div className="space-y-6">
               {/* Wallet Card */}
-              <div className="bg-[#f5f5f5] rounded-3xl p-8 border border-[#e5e5e5]">
+              <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
                 <div className="flex items-center gap-3 mb-6">
-                  <Wallet className="w-6 h-6 text-[#6366f1]" />
+                  <Wallet className="w-6 h-6 text-[#0f766e]" />
                   <h2 className="text-xl text-[#1a1a1a]">Connected Wallet</h2>
                 </div>
 
-                <div className="bg-white rounded-2xl p-6 border border-[#e5e5e5]">
+                <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#6366f1]/10 flex items-center justify-center">
-                        <Wallet className="w-5 h-5 text-[#6366f1]" />
+                      <div className="w-10 h-10 rounded-full bg-[#0f766e]/10 flex items-center justify-center">
+                        <Wallet className="w-5 h-5 text-[#0f766e]" />
                       </div>
                       <div>
                         <p className="text-sm text-[#666666]">Ethereum Address</p>
@@ -74,25 +74,25 @@ export default function AccountPage() {
               </div>
 
               {/* Quick Links */}
-              <div className="bg-[#f5f5f5] rounded-3xl p-8 border border-[#e5e5e5]">
+              <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
                 <h2 className="text-xl text-[#1a1a1a] mb-4">Quick Links</h2>
                 <div className="space-y-3">
                   <Link
                     href="/tickets"
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-[#e5e5e5] hover:border-[#6366f1] boty-transition"
+                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-[#e5e5e5] hover:border-[#0f766e] boty-transition"
                   >
                     <div className="flex items-center gap-3">
-                      <User className="w-5 h-5 text-[#6366f1]" />
+                      <User className="w-5 h-5 text-[#0f766e]" />
                       <span className="text-[#1a1a1a]">My Tickets</span>
                     </div>
                     <ExternalLink className="w-4 h-4 text-[#666666]" />
                   </Link>
                   <Link
                     href="/dashboard/events"
-                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-[#e5e5e5] hover:border-[#6366f1] boty-transition"
+                    className="flex items-center justify-between p-4 bg-white rounded-xl border border-[#e5e5e5] hover:border-[#0f766e] boty-transition"
                   >
                     <div className="flex items-center gap-3">
-                      <Mail className="w-5 h-5 text-[#6366f1]" />
+                      <Mail className="w-5 h-5 text-[#0f766e]" />
                       <span className="text-[#1a1a1a]">My Events</span>
                     </div>
                     <ExternalLink className="w-4 h-4 text-[#666666]" />
