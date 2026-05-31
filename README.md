@@ -6,7 +6,7 @@ EventNest is a privacy-aware on-chain event ticketing app built for the Fhenix W
 
 Live app: [https://event-nest-rho.vercel.app](https://event-nest-rho.vercel.app)
 
-Sepolia contract: [0xc19a7f4636d8320afcb1d19e79cab1747793a380](https://sepolia.etherscan.io/address/0xc19a7f4636d8320afcb1d19e79cab1747793a380)
+Sepolia contract: [0x8816edd9fc6a0e5b2605af22a0db5e9f76d58f0a](https://sepolia.etherscan.io/address/0x8816edd9fc6a0e5b2605af22a0db5e9f76d58f0a)
 
 ## What EventNest Does
 
@@ -134,8 +134,8 @@ Wave 5 is the final version for this submission.
 ## Current Deployment
 
 - App: [https://event-nest-rho.vercel.app](https://event-nest-rho.vercel.app)
-- Contract: [0xc19a7f4636d8320afcb1d19e79cab1747793a380](https://sepolia.etherscan.io/address/0xc19a7f4636d8320afcb1d19e79cab1747793a380)
-- Deploy block: `10959329`
+- Contract: [0x8816edd9fc6a0e5b2605af22a0db5e9f76d58f0a](https://sepolia.etherscan.io/address/0x8816edd9fc6a0e5b2605af22a0db5e9f76d58f0a)
+- Deploy block: `10960383`
 - Chain: Ethereum Sepolia
 - Chain ID: `11155111`
 - Metadata storage: Pinata/IPFS
@@ -272,8 +272,8 @@ Required public app variables:
 NEXT_PUBLIC_CHAIN_ID=11155111
 NEXT_PUBLIC_RPC_URL=https://ethereum-sepolia.publicnode.com
 NEXT_PUBLIC_SEPOLIA_RPC_URL=https://ethereum-sepolia.publicnode.com
-NEXT_PUBLIC_CONTRACT_ADDRESS=0xc19a7f4636d8320afcb1d19e79cab1747793a380
-NEXT_PUBLIC_CONTRACT_DEPLOY_BLOCK=10959329
+NEXT_PUBLIC_CONTRACT_ADDRESS=0x8816edd9fc6a0e5b2605af22a0db5e9f76d58f0a
+NEXT_PUBLIC_CONTRACT_DEPLOY_BLOCK=10960383
 NEXT_PUBLIC_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs
 NEXT_PUBLIC_EVENT_IMAGE_FALLBACK=https://res.cloudinary.com/dcaagefin/image/upload/f_auto,q_auto,c_fill,w_1200,h_675/v1780220361/eventnest/default-event-cover.png
 ```

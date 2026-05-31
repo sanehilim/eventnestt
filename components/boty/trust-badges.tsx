@@ -53,7 +53,7 @@ export function TrustBadges() {
   }, [])
 
   return (
-    <section className="relative z-20 -mt-20 pb-16 sm:-mt-24 sm:pb-20">
+    <section className="relative z-20 -mt-10 pb-16 sm:-mt-12 sm:pb-20 lg:-mt-14">
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         <div
           ref={sectionRef}

@@ -22,9 +22,9 @@ export function Hero() {
 
       {/* Content */}
       <div className="relative z-10 flex min-h-screen w-full items-center pb-28 pt-28 sm:pb-32">
-        <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="w-full lg:max-w-xl mx-auto lg:mx-0 text-center lg:text-left">
-            <span className="text-sm uppercase mb-6 block text-[#0f766e] animate-blur-in opacity-0 tracking-normal flex items-center gap-2 justify-center lg:justify-start" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
+        <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
+          <div className="w-full max-w-2xl text-left">
+            <span className="text-sm uppercase mb-6 block text-[#0f766e] animate-blur-in opacity-0 tracking-normal flex items-center gap-2 justify-start" style={{ animationDelay: '0.2s', animationFillMode: 'forwards' }}>
               <Shield className="w-4 h-4" />
               Privacy-First Event Ticketing
             </span>
@@ -34,10 +34,10 @@ export function Hero() {
               </span>
               <span className="block animate-blur-in opacity-0 font-semibold text-5xl md:text-7xl" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>On-chain event tickets</span>
             </h1>
-            <p className="text-lg leading-relaxed mb-10 max-w-md mx-auto lg:mx-0 text-[#666666] animate-blur-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
+            <p className="text-lg leading-relaxed mb-10 max-w-md text-[#666666] animate-blur-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
               Create public or gated events with paid NFT tickets, confidential invite credentials, wallet allowlists, QR entry validation, and Fhenix privacy controls.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-blur-in opacity-0" style={{ animationDelay: '1s', animationFillMode: 'forwards' }}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-start animate-blur-in opacity-0" style={{ animationDelay: '1s', animationFillMode: 'forwards' }}>
               <Link
                 href="/events"
                 className="group inline-flex items-center justify-center gap-3 bg-[#1a1a1a] text-white px-8 py-4 rounded-full text-sm tracking-wide boty-transition hover:bg-[#333] boty-shadow"
