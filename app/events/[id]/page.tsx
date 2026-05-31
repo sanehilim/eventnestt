@@ -1,14 +1,14 @@
 "use client"
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import { Calendar, MapPin, Users, Ticket, Lock, EyeOff, Shield, ArrowLeft, ArrowRight, Check, AlertCircle, Key, Loader2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
-import { useRegisterForEvent, useEvents } from "@/hooks/use-events"
+import { useHasEventTicket, useRegisterForEvent, useEvents } from "@/hooks/use-events"
 import { useAccount } from "wagmi"
 import { APP_CHAIN, formatEventDate } from "@/lib/onchain"
 
@@ -20,7 +20,8 @@ export default function EventDetailPage() {
   const params = useParams()
   const eventId = Number(params.id)
   const { events, loading } = useEvents()
-  const { register, isConnected } = useRegisterForEvent()
+  const { register, isConnected, address } = useRegisterForEvent()
+  const { hasTicket: hasExistingTicket, loading: ticketStatusLoading, refetch: refetchTicketStatus } = useHasEventTicket(eventId)
   const { chain } = useAccount()
 
   const [accessCode, setAccessCode] = useState("")
@@ -39,6 +40,16 @@ export default function EventDetailPage() {
   const availableTiers = activeTiers.filter((tier) => tier.totalSold < tier.capacity)
   const selectedTier = availableTiers.find((tier) => tier.id === selectedTierId) || availableTiers[0]
   const allTiersSoldOut = activeTiers.length > 0 && availableTiers.length === 0
+  const userHasTicket = hasExistingTicket || isRegistered || accessStatus === "approved"
+
+  useEffect(() => {
+    setAccessCode("")
+    setShowAccessForm(false)
+    setAccessStatus("idle")
+    setIsRegistered(false)
+    setActionError("")
+    setSelectedTierId(0)
+  }, [address, eventId])
 
   const handleAccessRequest = async () => {
     if (requiresAccessCode && !accessCode.trim()) return
@@ -54,6 +65,7 @@ export default function EventDetailPage() {
       await register(eventId, selectedTier.id, requiresAccessCode ? accessCode : undefined)
       setAccessStatus("approved")
       setIsRegistered(true)
+      await refetchTicketStatus()
     } catch (err) {
       setAccessStatus("denied")
       setActionError(err instanceof Error ? err.message : "Registration failed.")
@@ -76,6 +88,7 @@ export default function EventDetailPage() {
       await register(eventId, selectedTier.id)
       setAccessStatus("approved")
       setIsRegistered(true)
+      await refetchTicketStatus()
     } catch (err) {
       setAccessStatus("denied")
       setActionError(err instanceof Error ? err.message : "Registration failed.")
@@ -239,7 +252,7 @@ export default function EventDetailPage() {
                             key={tier.id}
                             type="button"
                             onClick={() => setSelectedTierId(tier.id)}
-                            disabled={soldOut || isRegistering}
+                            disabled={soldOut || isRegistering || userHasTicket}
                             className={`rounded-lg border p-4 text-left boty-transition disabled:opacity-50 ${
                               selected
                                 ? "border-[#0f766e] bg-[#0f766e]/10"
@@ -264,14 +277,16 @@ export default function EventDetailPage() {
                 )}
 
                 {/* Registration Section */}
-                {isRegistered || accessStatus === "approved" ? (
+                {userHasTicket ? (
                   <div className="bg-[#10b981]/10 rounded-lg p-6 border border-[#10b981]/20 text-center">
                     <div className="w-16 h-16 rounded-full bg-[#10b981]/20 flex items-center justify-center mx-auto mb-4">
                       <Check className="w-8 h-8 text-[#10b981]" />
                     </div>
                     <h3 className="text-xl text-[#1a1a1a] mb-2">You are registered!</h3>
                     <p className="text-sm text-[#666666] mb-4">
-                      Your NFT ticket has been minted and confirmed on-chain.
+                      {hasExistingTicket
+                        ? "This wallet already has an active NFT ticket for this event."
+                        : "Your NFT ticket has been minted and confirmed on-chain."}
                     </p>
                     <Link
                       href="/tickets"
@@ -297,10 +312,10 @@ export default function EventDetailPage() {
                     <button
                       type="button"
                       onClick={() => setShowAccessForm(true)}
-                      disabled={allTiersSoldOut}
+                      disabled={allTiersSoldOut || ticketStatusLoading}
                       className="bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow"
                     >
-                      {allTiersSoldOut ? "Sold Out" : requiresAccessCode ? "Enter Access Code" : "Register With Wallet"}
+                      {ticketStatusLoading ? "Checking Ticket..." : allTiersSoldOut ? "Sold Out" : requiresAccessCode ? "Enter Access Code" : "Register With Wallet"}
                     </button>
                   </div>
                 ) : isGated ? (
@@ -338,7 +353,7 @@ export default function EventDetailPage() {
                         <button
                           type="button"
                           onClick={handleAccessRequest}
-                          disabled={accessStatus === "verifying" || (requiresAccessCode && !accessCode.trim()) || !selectedTier}
+                          disabled={ticketStatusLoading || accessStatus === "verifying" || (requiresAccessCode && !accessCode.trim()) || !selectedTier}
                           className="w-full bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                           {accessStatus === "verifying" ? (
@@ -368,15 +383,15 @@ export default function EventDetailPage() {
                       <button
                         type="button"
                         onClick={handleDirectRegister}
-                        disabled={isRegistering || !selectedTier}
+                      disabled={ticketStatusLoading || isRegistering || !selectedTier}
                         className="w-full bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                       >
-                        {isRegistering ? (
+                        {ticketStatusLoading || isRegistering ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
                         ) : (
                           <Ticket className="w-4 h-4" />
                         )}
-                        Register for Event
+                        {ticketStatusLoading ? "Checking Ticket..." : "Register for Event"}
                       </button>
                     )}
 

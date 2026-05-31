@@ -533,6 +533,17 @@ export function useRegisterForEvent() {
     assertWriteReady(isConnected, chain?.id)
     if (!address) throw new Error("Wallet not connected")
 
+    const alreadyRegistered = (await publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "hasTicket",
+      args: [BigInt(eventId), address],
+    })) as boolean
+
+    if (alreadyRegistered) {
+      throw new Error("This wallet already has an active ticket for this event. Open My Tickets to view it.")
+    }
+
     const rawEvent = (await publicClient.readContract({
       address: CONTRACT_ADDRESS,
       abi,
@@ -617,6 +628,46 @@ export function useRegisterForEvent() {
   }
 
   return { register, isConnected, address }
+}
+
+export function useHasEventTicket(eventId: number) {
+  const { address, isConnected } = useAccount()
+  const [hasTicket, setHasTicket] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  const fetchTicketStatus = useCallback(async () => {
+    if (!isConnected || !address || !isContractDeployed || !Number.isInteger(eventId) || eventId < 0) {
+      setHasTicket(false)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const result = (await publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi,
+        functionName: "hasTicket",
+        args: [BigInt(eventId), address],
+      })) as boolean
+
+      setHasTicket(result)
+    } catch (err) {
+      console.error("Error checking event ticket status:", err)
+      setHasTicket(false)
+    } finally {
+      setLoading(false)
+    }
+  }, [address, eventId, isConnected])
+
+  useEffect(() => {
+    const run = async () => {
+      await fetchTicketStatus()
+    }
+
+    void run()
+  }, [fetchTicketStatus])
+
+  return { hasTicket, loading, refetch: fetchTicketStatus }
 }
 
 export function useMyEvents() {
