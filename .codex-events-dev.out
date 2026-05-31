@@ -10,3 +10,45 @@
  ✓ Starting...
  ✓ Ready in 8.1s
  ○ Compiling /events ...
+ GET /events 200 in 2119ms
+ GET /events 200 in 1447ms
+ GET /events 200 in 773ms
+ GET /events 200 in 470ms
+ GET /events 200 in 420ms
+ GET /events 200 in 300ms
+ GET /events 200 in 278ms
+ GET /events 200 in 376ms
+ GET /events 200 in 351ms
+ GET /events 200 in 308ms
+ GET /events 200 in 277ms
+ GET /events 200 in 259ms
+ GET /events 200 in 240ms
+ GET /events 200 in 401ms
+ GET /events 200 in 301ms
+ GET /events 200 in 367ms
+ GET /events 200 in 275ms
+ GET /events 200 in 254ms
+ GET /events 200 in 248ms
+ GET /events 200 in 507ms
+ GET /events 200 in 530ms
+ GET /events 200 in 447ms
+ GET /events 200 in 483ms
+ GET /events 200 in 397ms
+ GET /events 200 in 357ms
+ GET /events 200 in 364ms
+ GET /events 200 in 451ms
+ GET /events 200 in 1012ms
+ GET /events 200 in 691ms
+ GET /events 200 in 398ms
+ GET /events 200 in 465ms
+ GET /events 200 in 343ms
+ GET /events 200 in 433ms
+ GET /events 200 in 606ms
+ GET /events 200 in 335ms
+ GET /events 200 in 356ms
+ GET /events 200 in 387ms
+ GET /events 200 in 467ms
+ GET /events 200 in 340ms
+ GET /events 200 in 318ms
+ GET /events 200 in 570ms
+[?25h
