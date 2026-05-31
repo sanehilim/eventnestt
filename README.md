@@ -37,6 +37,9 @@ Attendees can:
 - Transfer eligible unused tickets before the event starts.
 - Burn eligible unused tickets before the event starts.
 
+  <img width="1086" height="588" alt="image" src="https://github.com/user-attachments/assets/1bf9c344-5855-4298-bffa-be8c40fbb084" />
+
+
 ## Why This Project Matters
 
 Most event platforms keep the critical trust layer off-chain: ticket ownership, access rules, duplicate prevention, guest lists, and check-ins are controlled by a centralized backend. EventNest moves those guarantees into a smart contract while using Fhenix CoFHE for the sensitive part of gated events: the invite credential.
