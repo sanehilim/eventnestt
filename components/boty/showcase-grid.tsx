@@ -5,23 +5,21 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Calendar, MapPin, Users, Ticket, EyeOff, Lock, ArrowRight, Loader2 } from "lucide-react"
 import { useEvents, type Event } from "@/hooks/use-events"
+import { formatEventDate } from "@/lib/onchain"
 
-type EventCategory = "all" | "hackathon" | "conference" | "vip" | "workshop"
+type EventCategory = "all" | "hackathon" | "conference" | "vip" | "workshop" | "meetup"
 
 const categories = [
   { value: "all" as EventCategory, label: "All Events" },
   { value: "hackathon" as EventCategory, label: "Hackathons" },
   { value: "conference" as EventCategory, label: "Conferences" },
   { value: "workshop" as EventCategory, label: "Workshops" },
-  { value: "vip" as EventCategory, label: "VIP" }
+  { value: "vip" as EventCategory, label: "VIP" },
+  { value: "meetup" as EventCategory, label: "Meetups" },
 ]
 
 function formatDate(timestamp: bigint): string {
-  try {
-    return new Date(Number(timestamp)).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-  } catch {
-    return "TBA"
-  }
+  return formatEventDate(timestamp, { month: "short", day: "numeric", year: "numeric" })
 }
 
 export function ShowcaseGrid() {
@@ -81,7 +79,7 @@ export function ShowcaseGrid() {
             Featured Events
           </h2>
           <p className="text-lg text-[#666666] max-w-md mx-auto animate-blur-in opacity-0" style={{ animationDelay: "0.6s", animationFillMode: "forwards" }}>
-            Privacy-first Web3 events with a CoFHE-ready roadmap
+            Privacy-first Web3 events with CoFHE invite access
           </p>
         </div>
 
@@ -91,8 +89,8 @@ export function ShowcaseGrid() {
             <div
               className="absolute top-1 bottom-1 bg-[#1a1a1a] rounded-full transition-all duration-300 ease-out"
               style={{
-                left: selectedCategory === "all" ? "4px" : selectedCategory === "hackathon" ? "calc(20% + 2px)" : selectedCategory === "conference" ? "calc(40% + 2px)" : selectedCategory === "workshop" ? "calc(60% + 2px)" : "calc(80% + 2px)",
-                width: "calc(20% - 4px)"
+                left: `calc(${categories.findIndex((category) => category.value === selectedCategory) * (100 / categories.length)}% + 2px)`,
+                width: `calc(${100 / categories.length}% - 4px)`
               }}
             />
             {categories.map((category) => (
@@ -126,7 +124,7 @@ export function ShowcaseGrid() {
             </div>
           )}
           {filteredEvents.map((event, index) => {
-            const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
+            const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess
 
             return (
               <Link
@@ -184,7 +182,9 @@ export function ShowcaseGrid() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Ticket className="w-4 h-4 text-[#0f766e]" />
-                      <span className="text-sm font-medium text-[#1a1a1a]">{event.ticketPrice}</span>
+                      <span className="text-sm font-medium text-[#1a1a1a]">
+                        {event.tiers.filter((tier) => tier.active).length > 1 ? "Tiered" : event.ticketPrice}
+                      </span>
                     </div>
                     <span className="text-sm text-[#0f766e] flex items-center gap-1 group-hover:translate-x-1 boty-transition">
                       View <ArrowRight className="w-3 h-3" />

@@ -45,7 +45,7 @@ export function CTABanner() {
           <div className="relative z-10 text-left max-w-2xl">
             <div className="inline-flex items-center gap-2 mb-6">
               <Zap className="w-5 h-5 text-white" />
-              <span className="text-sm uppercase tracking-widest text-white/80">CoFHE-ready roadmap</span>
+              <span className="text-sm uppercase tracking-widest text-white/80">CoFHE live on Sepolia</span>
             </div>
             <h3 className="text-4xl md:text-5xl text-white mb-4 lg:text-6xl font-semibold">
               Privacy-First
@@ -57,7 +57,7 @@ export function CTABanner() {
             <div className="flex flex-col items-start gap-4">
               <div className="flex items-center gap-3 text-white/90">
                 <Lock className="w-5 h-5 text-white flex-shrink-0" />
-                <span className="text-base">Hashed Invite Codes</span>
+                <span className="text-base">Encrypted Invite Credentials</span>
               </div>
               <div className="flex items-center gap-3 text-white/90">
                 <Shield className="w-5 h-5 text-white flex-shrink-0" />

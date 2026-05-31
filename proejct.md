@@ -1,29 +1,43 @@
 # EventNest - Production Architecture Notes
 
-EventNest is a privacy-aware on-chain event ticketing app for Ethereum Sepolia. The current production release focuses on reliable on-chain event creation, gated registration, paid NFT tickets, transfers, and organizer check-in.
+EventNest is a privacy-aware on-chain event ticketing app for Ethereum Sepolia. The current Wave 5 production release focuses on reliable on-chain event creation, CoFHE-backed confidential invite checks, tiered NFT tickets, paid registration, transfers, and organizer check-in.
 
 ## Current Shipped Architecture
 
-- Event metadata and access flags are stored in the deployed EventNest ticket contract.
-- Current Sepolia contract: `0x1f9ec1bcf266c8779b128a3962d07bb0ee7379ce` from block `10849892`.
-- Invite codes are hashed client-side and the hash is stored on-chain.
+- Event metadata is pinned through Pinata/IPFS for new events; access flags, ticket tiers, sales counts, check-ins, and ticket ownership are stored in the deployed EventNest ticket contract.
+- Current Sepolia contract: `0xc19a7f4636d8320afcb1d19e79cab1747793a380` from block `10959329`.
+- Production app: https://event-nest-rho.vercel.app
+- Invite credentials are encrypted in the browser with `@cofhe/sdk` and stored as CoFHE encrypted handles.
+- Confidential invite checks compare encrypted attendee credentials with the encrypted organizer credential in `FHE.sol`.
+- The final encrypted access result is decrypted with a proof and verified by the contract before confidential ticket minting.
+- Ticket tiers support per-tier capacity, price, transferability, active/inactive status, and hidden encrypted condition handles.
 - Wallet allowlists are enforced by the contract at mint time.
 - Ticket price, capacity, one-ticket-per-wallet, transfers, check-in, and burn cleanup are enforced on-chain.
-- The app uses wagmi and viem against the configured Sepolia contract.
+- The app uses wagmi, viem, the CoFHE SDK, and a server-only Pinata metadata route against the configured Sepolia contract.
 - Empty states are real empty states; event lists do not fall back to demo event data.
 
 ## Privacy Reality
 
-The current release is not a confidential FHE contract yet. Event names, descriptions, dates, prices, and metadata are readable from the public Sepolia contract. Invite codes are not stored in plaintext, but a hash is still public and should be treated as a gated-access mechanism rather than full secrecy.
+The current release uses CoFHE for confidential invite credentials. Event names, descriptions, dates, prices, metadata, public tier settings, wallet allowlists, and ERC721 ownership remain public because they are ordinary public blockchain state.
 
-## CoFHE/Fhenix Roadmap
+The confidential path protects the invite credential itself:
 
-Fhenix CoFHE documentation shows Sepolia support for real FHE operations and the JavaScript SDK flow for encrypting inputs before sending them to an FHE-enabled contract. A future EventNest privacy upgrade should migrate sensitive rules into a CoFHE contract stack using:
+- Organizers encrypt the invite credential in the browser.
+- The contract stores encrypted credential handles, not the plaintext credential or a new public hash.
+- Attendees submit encrypted credentials for comparison.
+- Only the final access decision is revealed for the mint transaction.
 
-- `cofhe-contracts` and `FHE.sol` encrypted types for encrypted access data.
-- `@cofhe/sdk` for browser-side input encryption.
+Legacy public invite-code hash support remains in the contract for backward compatibility with older events, but the Wave 5 app flow uses the confidential credential path.
+
+## CoFHE/Fhenix Integration
+
+The Wave 5 contract and app use:
+
+- `@fhenixprotocol/cofhe-contracts` and `FHE.sol` encrypted types for confidential access data.
+- `@cofhe/sdk` for browser-side input encryption and decrypt-result requests.
 - `FHE.allowThis` and `FHE.allowSender` permissions for encrypted state access.
-- Testnet validation on a supported Sepolia network before any mainnet rollout.
+- `FHE.verifyDecryptResult` before confidential ticket minting.
+- Ethereum Sepolia validation before any future mainnet launch.
 
 Useful docs:
 

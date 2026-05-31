@@ -8,12 +8,12 @@ import { Footer } from "@/components/boty/footer"
 const privacyFeatures = [
   {
     icon: Shield,
-    title: "Hashed Access Control",
-    description: "Invite codes are stored as one-way hashes and verified by the ticket contract before minting.",
+    title: "Confidential Invite Checks",
+    description: "New invite credentials are encrypted in the browser and compared on-chain through CoFHE.",
     details: [
-      "Invite codes are never stored as plain text",
-      "Private events can require a matching code",
-      "Eligibility is enforced on-chain"
+      "Invite credentials are not stored in plaintext",
+      "The contract stores encrypted credential handles",
+      "Minting verifies a threshold-signed decrypt result"
     ]
   },
   {
@@ -38,12 +38,12 @@ const privacyFeatures = [
   },
   {
     icon: Database,
-    title: "CoFHE-Ready Roadmap",
-    description: "The current production path is on-chain and auditable; encrypted equality checks are documented for the next Fhenix upgrade.",
+    title: "Honest Public State",
+    description: "Event commerce data stays public by design, while invite credentials use the confidential path.",
     details: [
-      "Fhenix docs are linked in the roadmap",
-      "Access checks are isolated for upgrade",
-      "README documents current and next-state privacy"
+      "Event metadata and ticket ownership are public",
+      "Wallet allowlists are public contract state",
+      "Privacy claims match the deployed Sepolia contract"
     ]
   }
 ]
@@ -58,13 +58,13 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center mb-20">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm mb-6">
             <Zap className="w-4 h-4" />
-            CoFHE-ready roadmap
+            CoFHE confidential credentials
           </div>
           <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl text-foreground mb-6">
             Privacy by <span className="text-primary">Design</span>
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            EventNest protects gated events today with hashed invite codes, wallet allowlists, NFT tickets, and on-chain check-in. The Fhenix/CoFHE path is documented for encrypted access rules as the next privacy upgrade.
+            EventNest protects gated events with encrypted invite credentials, wallet allowlists, NFT tickets, and on-chain check-in. Event metadata and ownership remain public blockchain state.
           </p>
         </div>
 
@@ -72,15 +72,15 @@ export default function PrivacyPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-20">
           <div className="text-center mb-12">
             <h2 className="font-serif text-4xl text-foreground mb-4">How Access Privacy Works</h2>
-            <p className="text-lg text-muted-foreground">Current hashed checks with a clear CoFHE path</p>
+            <p className="text-lg text-muted-foreground">Encrypted invite checks with on-chain ticket settlement</p>
           </div>
 
           <div className="grid md:grid-cols-4 gap-6">
             {[
-              { step: 1, title: "Hash", desc: "Invite codes are hashed client-side before the organizer stores the rule on-chain" },
-              { step: 2, title: "Store", desc: "The event, price, capacity, and access settings live in the ticket contract" },
-              { step: 3, title: "Verify", desc: "Minting checks payment, capacity, code hash, and wallet allowlist status" },
-              { step: 4, title: "Upgrade", desc: "CoFHE encrypted equality checks are documented as the privacy upgrade path" }
+              { step: 1, title: "Encrypt", desc: "Invite credentials are encrypted in the browser with the CoFHE SDK" },
+              { step: 2, title: "Store", desc: "The contract stores encrypted credential handles and public event rules" },
+              { step: 3, title: "Compare", desc: "Attendee credentials are compared through FHE equality checks" },
+              { step: 4, title: "Mint", desc: "A verified decrypt result unlocks the ticket mint transaction" }
             ].map((item) => (
               <div key={item.step} className="bg-card rounded-lg p-6 border border-border text-center boty-shadow">
                 <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center mx-auto mb-4 font-bold">
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 mb-20">
           <div className="text-center mb-12">
             <h2 className="font-serif text-4xl text-foreground mb-4">What Stays Private</h2>
-            <p className="text-lg text-muted-foreground">Everything you need to keep confidential</p>
+            <p className="text-lg text-muted-foreground">What is confidential and what remains public</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -136,7 +136,7 @@ export default function PrivacyPage() {
                   {[
                     "Manual attendee spreadsheets",
                     "Payment reconciliation off-chain",
-                    "Invite codes in plain text",
+                    "Invite codes shared in plain text",
                     "Duplicate tickets possible",
                     "Check-in status easy to spoof",
                     "Access changes hard to audit"
@@ -156,10 +156,10 @@ export default function PrivacyPage() {
                   {[
                     "NFT ticket ownership tracked",
                     "Ticket price enforced by contract",
-                    "Invite codes stored as hashes",
+                    "Encrypted invite credential checks",
                     "One ticket per wallet per event",
                     "QR check-in writes to chain",
-                    "CoFHE privacy upgrade documented"
+                    "CoFHE flow live on Sepolia"
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-3 text-foreground">
                       <Lock className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
         <div className="max-w-4xl mx-auto px-6 lg:px-8 text-center">
           <h2 className="font-serif text-4xl text-foreground mb-6">Ready to Gate Events on Chain?</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Start creating events with hashed invite access, allowlists, paid NFT tickets, transfers, and check-in.
+            Start creating events with confidential invite access, allowlists, paid NFT tickets, transfers, and check-in.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

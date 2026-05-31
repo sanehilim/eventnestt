@@ -7,6 +7,7 @@ const rootDir = process.cwd()
 const contractFile = path.join(rootDir, "contracts", "EventNestTicket.sol")
 const outFile = path.join(rootDir, "out", "EventNestTicket.sol", "EventNestTicket.json")
 const abiFile = path.join(rootDir, "contracts", "abi.ts")
+const maxRuntimeBytes = 24_576
 
 function readSource(candidate) {
   if (!fs.existsSync(candidate)) {
@@ -30,9 +31,20 @@ function findImports(importPath) {
     return readSource(resolved) ?? { error: `Import not found: ${importPath}` }
   }
 
+  if (importPath.startsWith("@fhenixprotocol/cofhe-contracts/")) {
+    const resolved = path.join(rootDir, "node_modules", ...importPath.split("/"))
+    return readSource(resolved) ?? { error: `Import not found: ${importPath}` }
+  }
+
+  if (importPath === "./ICofhe.sol" || importPath === "ICofhe.sol") {
+    const resolved = path.join(rootDir, "node_modules", "@fhenixprotocol", "cofhe-contracts", "ICofhe.sol")
+    return readSource(resolved) ?? { error: `Import not found: ${importPath}` }
+  }
+
   const localCandidates = [
     path.join(rootDir, importPath),
     path.join(rootDir, "contracts", importPath),
+    path.join(rootDir, "node_modules", importPath),
   ]
 
   for (const candidate of localCandidates) {
@@ -55,9 +67,10 @@ export function compileContract() {
       },
     },
     settings: {
+      evmVersion: "cancun",
       optimizer: {
         enabled: true,
-        runs: 200,
+        runs: 0,
       },
       outputSelection: {
         "*": {
@@ -78,6 +91,11 @@ export function compileContract() {
   const artifact = output.contracts["contracts/EventNestTicket.sol"]?.EventNestTicket
   if (!artifact) {
     throw new Error("EventNestTicket artifact was not generated.")
+  }
+
+  const runtimeBytes = artifact.evm.deployedBytecode.object.length / 2
+  if (runtimeBytes > maxRuntimeBytes) {
+    throw new Error(`EventNestTicket runtime is ${runtimeBytes} bytes, above the ${maxRuntimeBytes} byte deployment limit.`)
   }
 
   fs.mkdirSync(path.dirname(outFile), { recursive: true })
@@ -103,10 +121,13 @@ export function compileContract() {
   return {
     abi: artifact.abi,
     bytecode: artifact.evm.bytecode.object,
+    deployedBytecode: artifact.evm.deployedBytecode.object,
   }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
   const result = compileContract()
-  console.log(`Compiled EventNestTicket (${result.bytecode.length / 2} bytes of bytecode).`)
+  console.log(
+    `Compiled EventNestTicket (creation ${result.bytecode.length / 2} bytes, runtime ${result.deployedBytecode.length / 2} bytes).`,
+  )
 }

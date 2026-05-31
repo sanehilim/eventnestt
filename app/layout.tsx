@@ -12,7 +12,7 @@ const geistSans = Geist({
 
 export const metadata: Metadata = {
   title: 'EventNest - On-Chain Event Ticketing',
-  description: 'Create, gate, sell, transfer, and check in NFT tickets with hashed invite codes and wallet allowlists on Sepolia. Built with a CoFHE/Fhenix privacy roadmap.',
+  description: 'Create, gate, sell, transfer, and check in NFT tickets with CoFHE invite credentials and wallet allowlists on Sepolia.',
   keywords: ['events', 'tickets', 'privacy', 'web3', 'blockchain', 'fhenix', 'nft', 'ticketing', 'allowlist'],
   icons: {
     icon: [

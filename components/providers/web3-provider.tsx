@@ -1,21 +1,12 @@
 "use client"
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { WagmiProvider, createConfig, http } from "wagmi"
-import { injected, coinbaseWallet, walletConnect } from "wagmi/connectors"
+import { WagmiProvider, createConfig, http, injected } from "wagmi"
 import { APP_CHAIN, APP_RPC_URL } from "@/lib/onchain"
-
-const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim()
-
-const connectors = [
-  injected(),
-  coinbaseWallet({ appName: "EventNest" }),
-  ...(projectId ? [walletConnect({ projectId })] : []),
-]
 
 const wagmiConfig = createConfig({
   chains: [APP_CHAIN],
-  connectors,
+  connectors: [injected()],
   transports: {
     [APP_CHAIN.id]: http(APP_RPC_URL),
   },

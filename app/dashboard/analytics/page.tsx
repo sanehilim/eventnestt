@@ -22,11 +22,13 @@ export default function AnalyticsPage() {
   const analyticsData = useMemo(() => {
     const totalEvents = events.length
     const totalAttendees = events.reduce((sum, event) => sum + event.totalTicketsSold, 0)
-    const gatedEvents = events.filter((event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist).length
+    const gatedEvents = events.filter((event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess).length
     const inviteProtected = events.filter((event) => event.requiresInviteCode).length
     const whitelistProtected = events.filter((event) => event.requiresWhitelist).length
+    const confidentialProtected = events.filter((event) => event.requiresConfidentialAccess).length
+    const activeTiers = events.reduce((sum, event) => sum + event.tiers.filter((tier) => tier.active).length, 0)
     const gatedAttendees = events
-      .filter((event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist)
+      .filter((event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess)
       .reduce((sum, event) => sum + event.totalTicketsSold, 0)
     const ticketSales = events
       .slice()
@@ -37,7 +39,7 @@ export default function AnalyticsPage() {
         sales: event.totalTicketsSold,
         fullName: event.name,
       }))
-    const recentPayments = payments.slice(-4).reverse().map((payment) => {
+    const recentPayments = payments.filter((payment) => payment.type === "received").slice(-4).reverse().map((payment) => {
       const event = events.find((entry) => entry.id === payment.eventId)
       return {
         type: "ticket_sale",
@@ -53,7 +55,7 @@ export default function AnalyticsPage() {
           .sort((left, right) => Number(right.eventDate) - Number(left.eventDate))
           .slice(0, 4)
           .map((event) => {
-            const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
+            const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess
             return {
               type: isGated ? "access_granted" : "new_event",
               event: event.name,
@@ -69,6 +71,8 @@ export default function AnalyticsPage() {
       gatedEvents,
       inviteProtected,
       whitelistProtected,
+      confidentialProtected,
+      activeTiers,
       gatedAttendees,
       ticketSales,
       recentActivity,
@@ -205,7 +209,7 @@ export default function AnalyticsPage() {
 
               <div className="bg-gradient-to-br from-[#0f766e] to-[#f59e0b] rounded-xl p-8 text-white">
                 <h3 className="text-2xl font-semibold mb-6">Privacy Impact</h3>
-                <div className="grid sm:grid-cols-3 gap-8">
+                <div className="grid sm:grid-cols-4 gap-8">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <Lock className="w-5 h-5 text-white/80" />
@@ -223,9 +227,16 @@ export default function AnalyticsPage() {
                   <div>
                     <div className="flex items-center gap-2 mb-2">
                       <EyeOff className="w-5 h-5 text-white/80" />
-                      <span className="text-white/80">Tickets Minted for Gated Events</span>
+                      <span className="text-white/80">CoFHE Events</span>
                     </div>
-                    <p className="text-3xl font-bold">{analyticsData.gatedAttendees}</p>
+                    <p className="text-3xl font-bold">{analyticsData.confidentialProtected}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Ticket className="w-5 h-5 text-white/80" />
+                      <span className="text-white/80">Active Ticket Tiers</span>
+                    </div>
+                    <p className="text-3xl font-bold">{analyticsData.activeTiers}</p>
                   </div>
                 </div>
               </div>

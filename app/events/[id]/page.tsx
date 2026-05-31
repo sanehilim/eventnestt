@@ -10,15 +10,10 @@ import { Footer } from "@/components/boty/footer"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useRegisterForEvent, useEvents } from "@/hooks/use-events"
 import { useAccount } from "wagmi"
-import { APP_CHAIN } from "@/lib/onchain"
+import { APP_CHAIN, formatEventDate } from "@/lib/onchain"
 
 function formatDate(timestamp: bigint): string {
-  try {
-    const date = new Date(Number(timestamp))
-    return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-  } catch {
-    return "Date TBA"
-  }
+  return formatEventDate(timestamp, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
 }
 
 export default function EventDetailPage() {
@@ -34,20 +29,29 @@ export default function EventDetailPage() {
   const [isRegistered, setIsRegistered] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [actionError, setActionError] = useState("")
+  const [selectedTierId, setSelectedTierId] = useState(0)
 
   const event = events.find(e => e.id === eventId)
   const isWrongChain = isConnected && chain?.id !== APP_CHAIN.id
-  const requiresAccessCode = Boolean(event?.requiresInviteCode)
-  const isGated = Boolean(event && (event.isPrivate || event.requiresInviteCode || event.requiresWhitelist))
+  const requiresAccessCode = Boolean(event?.requiresInviteCode || event?.requiresConfidentialAccess)
+  const isGated = Boolean(event && (event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess))
+  const activeTiers = event?.tiers.filter((tier) => tier.active) || []
+  const availableTiers = activeTiers.filter((tier) => tier.totalSold < tier.capacity)
+  const selectedTier = availableTiers.find((tier) => tier.id === selectedTierId) || availableTiers[0]
+  const allTiersSoldOut = activeTiers.length > 0 && availableTiers.length === 0
 
   const handleAccessRequest = async () => {
     if (requiresAccessCode && !accessCode.trim()) return
+    if (!selectedTier) {
+      setActionError("No ticket tiers are available for this event.")
+      return
+    }
     setAccessStatus("verifying")
     setIsRegistering(true)
     setActionError("")
 
     try {
-      await register(eventId, requiresAccessCode ? accessCode : undefined)
+      await register(eventId, selectedTier.id, requiresAccessCode ? accessCode : undefined)
       setAccessStatus("approved")
       setIsRegistered(true)
     } catch (err) {
@@ -60,12 +64,16 @@ export default function EventDetailPage() {
 
   const handleDirectRegister = async () => {
     if (!isConnected) return
+    if (!selectedTier) {
+      setActionError("No ticket tiers are available for this event.")
+      return
+    }
     setAccessStatus("verifying")
     setIsRegistering(true)
     setActionError("")
 
     try {
-      await register(eventId)
+      await register(eventId, selectedTier.id)
       setAccessStatus("approved")
       setIsRegistered(true)
     } catch (err) {
@@ -162,7 +170,7 @@ export default function EventDetailPage() {
                   </div>
                   <div className="flex items-center gap-3 text-[#666666]">
                     <Ticket className="w-5 h-5 text-[#0f766e]" />
-                    <span>{event.ticketPrice}</span>
+                    <span>{selectedTier?.price || event.ticketPrice}</span>
                   </div>
                 </div>
 
@@ -176,6 +184,14 @@ export default function EventDetailPage() {
             <div>
               <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5] sticky top-28">
                 <h1 className="text-4xl text-[#1a1a1a] mb-4">{event.name}</h1>
+                {event.organizer && (
+                  <Link
+                    href={`/organizers/${event.organizer}`}
+                    className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-3 py-1 text-xs font-mono text-[#666666] hover:text-[#0f766e]"
+                  >
+                    Organizer {event.organizer.slice(0, 6)}...{event.organizer.slice(-4)}
+                  </Link>
+                )}
                 <p className="text-lg text-[#666666] mb-6">{event.description}</p>
 
                 {/* Privacy Features */}
@@ -191,7 +207,11 @@ export default function EventDetailPage() {
                     </li>
                     <li className="flex items-center gap-2 text-sm text-[#666666]">
                       <Check className="w-4 h-4 text-[#0f766e] flex-shrink-0" />
-                      {event.requiresInviteCode ? "Invite code required" : "No invite code needed"}
+                      {event.requiresConfidentialAccess
+                        ? "Confidential invite credential required"
+                        : event.requiresInviteCode
+                          ? "Invite code required"
+                          : "No invite code needed"}
                     </li>
                     <li className="flex items-center gap-2 text-sm text-[#666666]">
                       <Check className="w-4 h-4 text-[#0f766e] flex-shrink-0" />
@@ -199,10 +219,49 @@ export default function EventDetailPage() {
                     </li>
                     <li className="flex items-center gap-2 text-sm text-[#666666]">
                       <Lock className="w-4 h-4 text-[#0f766e] flex-shrink-0" />
-                      On-chain NFT ticket minting
+                      {event.requiresConfidentialAccess ? "CoFHE confidential invite check" : "On-chain NFT ticket minting"}
                     </li>
                   </ul>
                 </div>
+
+                {activeTiers.length > 0 && (
+                  <div className="bg-white rounded-lg p-6 mb-8 border border-[#e5e5e5]">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Ticket className="w-5 h-5 text-[#0f766e]" />
+                      <span className="font-medium text-[#1a1a1a]">Ticket Tier</span>
+                    </div>
+                    <div className="grid gap-3">
+                      {activeTiers.map((tier) => {
+                        const soldOut = tier.totalSold >= tier.capacity
+                        const selected = !soldOut && selectedTier?.id === tier.id
+                        return (
+                          <button
+                            key={tier.id}
+                            type="button"
+                            onClick={() => setSelectedTierId(tier.id)}
+                            disabled={soldOut || isRegistering}
+                            className={`rounded-lg border p-4 text-left boty-transition disabled:opacity-50 ${
+                              selected
+                                ? "border-[#0f766e] bg-[#0f766e]/10"
+                                : "border-[#e5e5e5] bg-white hover:bg-[#f5f5f5]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-4">
+                              <span className="font-medium text-[#1a1a1a]">{tier.name}</span>
+                              <span className="text-sm font-medium text-[#0f766e]">{tier.price}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-[#666666]">
+                              {tier.totalSold}/{tier.capacity} minted · {soldOut ? "Sold out" : tier.transferable ? "Transferable" : "Non-transferable"}
+                            </p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {allTiersSoldOut && (
+                      <p className="mt-4 text-sm text-[#ef4444]">All ticket tiers are sold out.</p>
+                    )}
+                  </div>
+                )}
 
                 {/* Registration Section */}
                 {isRegistered || accessStatus === "approved" ? (
@@ -230,15 +289,18 @@ export default function EventDetailPage() {
                     <h3 className="text-xl text-[#1a1a1a] mb-2">Gated Event</h3>
                     <p className="text-sm text-[#666666] mb-6">
                       {requiresAccessCode
-                        ? "This event requires an access code before registration."
+                        ? event.requiresConfidentialAccess
+                          ? "This event uses a confidential CoFHE invite check before registration."
+                          : "This event requires an access code before registration."
                         : "Your wallet must be allowed by the organizer before registration."}
                     </p>
                     <button
                       type="button"
                       onClick={() => setShowAccessForm(true)}
+                      disabled={allTiersSoldOut}
                       className="bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow"
                     >
-                      {requiresAccessCode ? "Enter Access Code" : "Register With Wallet"}
+                      {allTiersSoldOut ? "Sold Out" : requiresAccessCode ? "Enter Access Code" : "Register With Wallet"}
                     </button>
                   </div>
                 ) : isGated ? (
@@ -276,7 +338,7 @@ export default function EventDetailPage() {
                         <button
                           type="button"
                           onClick={handleAccessRequest}
-                          disabled={accessStatus === "verifying" || (requiresAccessCode && !accessCode.trim())}
+                          disabled={accessStatus === "verifying" || (requiresAccessCode && !accessCode.trim()) || !selectedTier}
                           className="w-full bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                         >
                           {accessStatus === "verifying" ? (
@@ -306,7 +368,7 @@ export default function EventDetailPage() {
                       <button
                         type="button"
                         onClick={handleDirectRegister}
-                        disabled={isRegistering}
+                        disabled={isRegistering || !selectedTier}
                         className="w-full bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                         {isRegistering ? (
@@ -326,7 +388,7 @@ export default function EventDetailPage() {
                       <ul className="space-y-1 text-sm text-[#666666]">
                         <li>NFT ticket stored in your wallet</li>
                         <li>On-chain verification</li>
-                        <li>Transferable ticket</li>
+                        <li>{selectedTier?.transferable ? "Transferable before the event starts" : "Non-transferable ticket"}</li>
                       </ul>
                     </div>
                   </div>

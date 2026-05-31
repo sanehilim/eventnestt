@@ -3,28 +3,26 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { ArrowLeft, Check, Loader2, ScanLine, Shield, Ticket, Trash2 } from "lucide-react"
+import { ArrowLeft, Check, DollarSign, Loader2, ScanLine, Shield, Ticket, Trash2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
-import { useEvent, useManageEventAccess, useTicketActions, type TicketValidation } from "@/hooks/use-events"
+import { WalletConnectButton } from "@/components/wallet-connect-button"
+import {
+  useEvent,
+  useEventPendingRevenue,
+  useEventWhitelist,
+  useManageEventAccess,
+  useTicketActions,
+  type TicketValidation,
+} from "@/hooks/use-events"
+import { dateInputToEventTimestamp, eventTimestampToDateInput } from "@/lib/onchain"
+import { useAccount } from "wagmi"
 
 function parseWallets(value: string) {
   return value
     .split(/[\s,]+/)
     .map((entry) => entry.trim())
     .filter(Boolean) as `0x${string}`[]
-}
-
-function toDateInput(timestamp?: bigint) {
-  if (!timestamp) {
-    return ""
-  }
-
-  try {
-    return new Date(Number(timestamp)).toISOString().slice(0, 10)
-  } catch {
-    return ""
-  }
 }
 
 function readTicketIdFromQrPayload(value: string) {
@@ -48,8 +46,27 @@ function readTicketIdFromQrPayload(value: string) {
 export default function ManageEventAccessPage() {
   const params = useParams()
   const eventId = Number(params.id)
+  const { address, isConnected } = useAccount()
   const { event, loading } = useEvent(eventId)
-  const { addWhitelist, removeWhitelist, updateEvent, updateInviteCode } = useManageEventAccess()
+  const {
+    pendingRevenue,
+    pendingWei,
+    refetch: refetchPendingRevenue,
+  } = useEventPendingRevenue(eventId)
+  const {
+    entries: whitelistEntries,
+    loading: whitelistLoading,
+    refetch: refetchWhitelist,
+  } = useEventWhitelist(eventId)
+  const {
+    addWhitelist,
+    removeWhitelist,
+    updateEvent,
+    updateInviteCode,
+    updateTicketTier,
+    updateTierCondition,
+    withdrawEventRevenue,
+  } = useManageEventAccess()
   const { checkInTicket, readTicket } = useTicketActions()
 
   const [inviteCode, setInviteCode] = useState("")
@@ -62,6 +79,8 @@ export default function ManageEventAccessPage() {
   const [isSavingWhitelist, setIsSavingWhitelist] = useState(false)
   const [isRemovingWhitelist, setIsRemovingWhitelist] = useState(false)
   const [isSavingEvent, setIsSavingEvent] = useState(false)
+  const [isWithdrawingRevenue, setIsWithdrawingRevenue] = useState(false)
+  const [savingTierId, setSavingTierId] = useState<number | null>(null)
   const [isCheckingTicket, setIsCheckingTicket] = useState(false)
   const [statusMessage, setStatusMessage] = useState("")
   const [eventForm, setEventForm] = useState({
@@ -77,8 +96,15 @@ export default function ManageEventAccessPage() {
     requiresWhitelist: false,
     image: "",
   })
+  const [tierForms, setTierForms] = useState<
+    Array<{ id: number; name: string; capacity: number; price: string; transferable: boolean; active: boolean }>
+  >([])
+  const [tierConditionDrafts, setTierConditionDrafts] = useState<Record<number, string>>({})
+  const [savingTierConditionId, setSavingTierConditionId] = useState<number | null>(null)
   const privateEventMissingAccessRule =
-    eventForm.isPrivate && !eventForm.requiresInviteCode && !eventForm.requiresWhitelist
+    eventForm.isPrivate && !eventForm.requiresInviteCode && !eventForm.requiresWhitelist && !event?.requiresConfidentialAccess
+  const isOrganizer =
+    Boolean(event?.organizer && address && event.organizer.toLowerCase() === address.toLowerCase())
 
   const wallets = useMemo(() => parseWallets(walletList), [walletList])
 
@@ -88,10 +114,10 @@ export default function ManageEventAccessPage() {
     }
 
     const timer = window.setTimeout(() => {
-      setEventForm({
-        name: event.name,
-        description: event.description,
-        date: toDateInput(event.eventDate),
+        setEventForm({
+          name: event.name,
+          description: event.description,
+          date: eventTimestampToDateInput(event.eventDate),
         location: event.location,
         category: event.category,
         maxAttendees: event.maxAttendees,
@@ -101,14 +127,23 @@ export default function ManageEventAccessPage() {
         requiresWhitelist: event.requiresWhitelist,
         image: event.image,
       })
+      setTierForms(
+        event.tiers.map((tier) => ({
+          id: tier.id,
+          name: tier.name,
+          capacity: tier.capacity,
+          price: tier.price === "Free" ? "" : tier.price.replace(/\s*ETH$/i, ""),
+          transferable: tier.transferable,
+          active: tier.active,
+        })),
+      )
     }, 0)
 
     return () => window.clearTimeout(timer)
   }, [event])
 
   const handleSaveEvent = async () => {
-    const eventTimestamp = new Date(eventForm.date).getTime()
-    if (!eventForm.name.trim() || !eventForm.date || Number.isNaN(eventTimestamp)) {
+    if (!eventForm.name.trim() || !eventForm.date) {
       setStatusMessage("Event name and date are required.")
       return
     }
@@ -123,7 +158,7 @@ export default function ManageEventAccessPage() {
       await updateEvent(eventId, {
         name: eventForm.name,
         description: eventForm.description,
-        eventDate: BigInt(eventTimestamp),
+        eventDate: dateInputToEventTimestamp(eventForm.date),
         maxAttendees: eventForm.maxAttendees,
         isPrivate: eventForm.isPrivate,
         requiresInviteCode: eventForm.requiresInviteCode,
@@ -149,12 +184,47 @@ export default function ManageEventAccessPage() {
     try {
       await updateInviteCode(eventId, inviteCode)
       setInviteCode("")
-      setStatusMessage("Invite code updated on-chain.")
+      setStatusMessage("Encrypted invite credential updated on-chain.")
     } catch (error) {
       console.error(error)
       setStatusMessage(error instanceof Error ? error.message : "Failed to update invite code.")
     } finally {
       setIsSavingInvite(false)
+    }
+  }
+
+  const handleSaveTier = async (tierId: number) => {
+    const tier = tierForms.find((entry) => entry.id === tierId)
+    if (!tier) return
+
+    setSavingTierId(tierId)
+    setStatusMessage("")
+    try {
+      await updateTicketTier(eventId, tier)
+      setStatusMessage("Ticket tier updated on-chain.")
+    } catch (error) {
+      console.error(error)
+      setStatusMessage(error instanceof Error ? error.message : "Failed to update ticket tier.")
+    } finally {
+      setSavingTierId(null)
+    }
+  }
+
+  const handleSaveTierCondition = async (tierId: number) => {
+    const conditionCode = tierConditionDrafts[tierId]?.trim()
+    if (!conditionCode) return
+
+    setSavingTierConditionId(tierId)
+    setStatusMessage("")
+    try {
+      await updateTierCondition(eventId, tierId, conditionCode)
+      setTierConditionDrafts((current) => ({ ...current, [tierId]: "" }))
+      setStatusMessage("Tier-specific encrypted access condition updated on-chain.")
+    } catch (error) {
+      console.error(error)
+      setStatusMessage(error instanceof Error ? error.message : "Failed to update tier access condition.")
+    } finally {
+      setSavingTierConditionId(null)
     }
   }
 
@@ -166,6 +236,7 @@ export default function ManageEventAccessPage() {
       await addWhitelist(eventId, wallets)
       setStatusMessage("Whitelist updated on-chain.")
       setWalletList("")
+      await refetchWhitelist()
     } catch (error) {
       console.error(error)
       setStatusMessage(error instanceof Error ? error.message : "Failed to update whitelist.")
@@ -182,6 +253,7 @@ export default function ManageEventAccessPage() {
       await removeWhitelist(eventId, removeWallet.trim() as `0x${string}`)
       setRemoveWallet("")
       setStatusMessage("Wallet removed from whitelist.")
+      await refetchWhitelist()
     } catch (error) {
       console.error(error)
       setStatusMessage(error instanceof Error ? error.message : "Failed to remove wallet.")
@@ -242,6 +314,21 @@ export default function ManageEventAccessPage() {
     }
   }
 
+  const handleWithdrawRevenue = async () => {
+    setIsWithdrawingRevenue(true)
+    setStatusMessage("")
+    try {
+      await withdrawEventRevenue(eventId)
+      await refetchPendingRevenue()
+      setStatusMessage("Event revenue withdrawn to the organizer wallet.")
+    } catch (error) {
+      console.error(error)
+      setStatusMessage(error instanceof Error ? error.message : "Revenue withdrawal failed.")
+    } finally {
+      setIsWithdrawingRevenue(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-white">
       <Header />
@@ -265,6 +352,14 @@ export default function ManageEventAccessPage() {
               <h1 className="text-3xl text-[#1a1a1a] mb-2">Event Not Found</h1>
               <p className="text-[#666666]">This event could not be loaded from the contract.</p>
             </div>
+          ) : !isConnected || !isOrganizer ? (
+            <div className="bg-[#f5f5f5] rounded-xl p-10 border border-[#e5e5e5] text-center">
+              <h1 className="text-3xl text-[#1a1a1a] mb-2">Organizer Wallet Required</h1>
+              <p className="text-[#666666] mb-6">
+                Connect the wallet that created this event to edit access rules or check in tickets.
+              </p>
+              <WalletConnectButton />
+            </div>
           ) : (
             <div className="space-y-6">
               <div className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
@@ -272,6 +367,28 @@ export default function ManageEventAccessPage() {
                 <h1 className="text-4xl text-[#1a1a1a] mb-2">{event.name}</h1>
                 <p className="text-[#666666]">{event.description}</p>
               </div>
+
+              <section className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
+                <div className="flex items-center gap-2 mb-6">
+                  <DollarSign className="w-5 h-5 text-[#0f766e]" />
+                  <h2 className="text-2xl text-[#1a1a1a]">Revenue</h2>
+                </div>
+                <div className="flex flex-col gap-4 rounded-lg border border-[#e5e5e5] bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-[#666666]">Available to withdraw</p>
+                    <p className="text-3xl font-semibold text-[#1a1a1a]">{pendingRevenue}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleWithdrawRevenue}
+                    disabled={isWithdrawingRevenue || pendingWei === 0n}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#0f766e] px-6 py-3 text-sm font-medium text-white boty-transition hover:bg-[#0d6b63] disabled:opacity-50"
+                  >
+                    {isWithdrawingRevenue ? <Loader2 className="w-4 h-4 animate-spin" /> : <DollarSign className="w-4 h-4" />}
+                    Withdraw Revenue
+                  </button>
+                </div>
+              </section>
 
               <section className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
                 <div className="flex items-center gap-2 mb-6">
@@ -406,13 +523,135 @@ export default function ManageEventAccessPage() {
               <section className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
                 <div className="flex items-center gap-2 mb-6">
                   <Shield className="w-5 h-5 text-[#0f766e]" />
+                  <h2 className="text-2xl text-[#1a1a1a]">Ticket Tiers</h2>
+                </div>
+
+                <div className="space-y-4">
+                  {tierForms.map((tier) => (
+                    <div key={tier.id} className="rounded-lg border border-[#e5e5e5] bg-white p-4">
+                      <div className="grid gap-4 md:grid-cols-[1fr_120px_140px_130px_auto]">
+                        <label className="block">
+                          <span className="block text-sm font-medium text-[#1a1a1a] mb-2">Name</span>
+                          <input
+                            value={tier.name}
+                            onChange={(value) =>
+                              setTierForms((current) =>
+                                current.map((entry) =>
+                                  entry.id === tier.id ? { ...entry, name: value.target.value } : entry,
+                                ),
+                              )
+                            }
+                            className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="block text-sm font-medium text-[#1a1a1a] mb-2">Capacity</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={tier.capacity}
+                            onChange={(value) =>
+                              setTierForms((current) =>
+                                current.map((entry) =>
+                                  entry.id === tier.id ? { ...entry, capacity: Number(value.target.value) || 0 } : entry,
+                                ),
+                              )
+                            }
+                            className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="block text-sm font-medium text-[#1a1a1a] mb-2">Price ETH</span>
+                          <input
+                            value={tier.price}
+                            onChange={(value) =>
+                              setTierForms((current) =>
+                                current.map((entry) =>
+                                  entry.id === tier.id ? { ...entry, price: value.target.value } : entry,
+                                ),
+                              )
+                            }
+                            placeholder="Free"
+                            className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                          />
+                        </label>
+                        <div className="flex flex-col justify-end gap-3 pb-2 text-sm text-[#1a1a1a]">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={tier.active}
+                              onChange={(value) =>
+                                setTierForms((current) =>
+                                  current.map((entry) =>
+                                    entry.id === tier.id ? { ...entry, active: value.target.checked } : entry,
+                                  ),
+                                )
+                              }
+                              className="h-4 w-4 accent-[#0f766e]"
+                            />
+                            Active
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={tier.transferable}
+                              onChange={(value) =>
+                                setTierForms((current) =>
+                                  current.map((entry) =>
+                                    entry.id === tier.id ? { ...entry, transferable: value.target.checked } : entry,
+                                  ),
+                                )
+                              }
+                              className="h-4 w-4 accent-[#0f766e]"
+                            />
+                            Transferable
+                          </label>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleSaveTier(tier.id)}
+                          disabled={savingTierId === tier.id || !tier.name.trim() || tier.capacity < 1}
+                          className="inline-flex items-center justify-center gap-2 self-end bg-[#1a1a1a] text-white px-5 py-3 rounded-lg text-sm font-medium boty-transition hover:bg-[#333] disabled:opacity-50"
+                        >
+                          {savingTierId === tier.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          Save
+                        </button>
+                      </div>
+                      <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                        <input
+                          type="text"
+                          value={tierConditionDrafts[tier.id] || ""}
+                          onChange={(value) =>
+                            setTierConditionDrafts((current) => ({ ...current, [tier.id]: value.target.value }))
+                          }
+                          placeholder="Optional tier-specific invite code"
+                          className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSaveTierCondition(tier.id)}
+                          disabled={savingTierConditionId === tier.id || !tierConditionDrafts[tier.id]?.trim()}
+                          className="inline-flex items-center justify-center gap-2 bg-[#0f766e] text-white px-5 py-3 rounded-lg text-sm font-medium boty-transition hover:bg-[#0d6b63] disabled:opacity-50"
+                        >
+                          {savingTierConditionId === tier.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
+                          Set Tier Code
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="bg-[#f5f5f5] rounded-xl p-8 border border-[#e5e5e5]">
+                <div className="flex items-center gap-2 mb-6">
+                  <Shield className="w-5 h-5 text-[#0f766e]" />
                   <h2 className="text-2xl text-[#1a1a1a]">Manage Access</h2>
                 </div>
 
                 <div className="grid gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-[#1a1a1a] mb-2">
-                      Invite Code
+                      <label className="block text-sm font-medium text-[#1a1a1a] mb-2">
+                      Confidential Invite Code
                     </label>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <input
@@ -477,6 +716,44 @@ export default function ManageEventAccessPage() {
                       </button>
                     </div>
                   </div>
+
+                  <div className="rounded-lg border border-[#e5e5e5] bg-white p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="font-medium text-[#1a1a1a]">Whitelist Status</h3>
+                        <p className="text-sm text-[#666666]">Latest allowlist state reconstructed from on-chain events.</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={refetchWhitelist}
+                        className="rounded-lg border border-[#e5e5e5] px-4 py-2 text-sm text-[#1a1a1a] hover:bg-[#f5f5f5]"
+                      >
+                        Refresh
+                      </button>
+                    </div>
+                    {whitelistLoading ? (
+                      <div className="flex items-center gap-2 text-sm text-[#666666]">
+                        <Loader2 className="h-4 w-4 animate-spin text-[#0f766e]" />
+                        Loading whitelist...
+                      </div>
+                    ) : whitelistEntries.length === 0 ? (
+                      <p className="text-sm text-[#666666]">No whitelist updates have been recorded for this event yet.</p>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto rounded-lg border border-[#e5e5e5]">
+                        {whitelistEntries.map((entry) => (
+                          <div
+                            key={entry.wallet}
+                            className="flex flex-col gap-2 border-b border-[#e5e5e5] px-4 py-3 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <span className="font-mono text-sm text-[#1a1a1a] break-all">{entry.wallet}</span>
+                            <span className={`text-sm ${entry.isWhitelisted ? "text-[#0f766e]" : "text-[#ef4444]"}`}>
+                              {entry.isWhitelisted ? "Approved" : "Removed"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -532,7 +809,12 @@ export default function ManageEventAccessPage() {
                       <p className="text-[#666666]">Event: <span className="text-[#1a1a1a]">{ticketValidation.event.name}</span></p>
                       <p className="text-[#666666]">Holder: <span className="font-mono text-[#1a1a1a]">{ticketValidation.ticket.holder.slice(0, 6)}...{ticketValidation.ticket.holder.slice(-4)}</span></p>
                       <p className="text-[#666666]">Status: <span className={ticketValidation.ticket.used ? "text-[#ef4444]" : "text-[#10b981]"}>{ticketValidation.ticket.used ? "Already used" : "Valid"}</span></p>
-                      <p className="text-[#666666]">Type: <span className="text-[#1a1a1a]">{ticketValidation.ticket.isVIP ? "VIP" : "General"}</span></p>
+                      <p className="text-[#666666]">
+                        Type: <span className="text-[#1a1a1a]">
+                          {ticketValidation.event.tiers.find((tier) => tier.id === ticketValidation.ticket.tierId)?.name ||
+                            (ticketValidation.ticket.isVIP ? "VIP" : "General")}
+                        </span>
+                      </p>
                     </div>
                   </div>
                 )}

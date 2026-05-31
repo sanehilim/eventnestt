@@ -68,7 +68,7 @@ export default function SettingsPage() {
                   {
                     key: "requireInviteCode",
                     title: "Require Invite Code",
-                    description: "New events require a hashed invite code before minting.",
+                    description: "New events require a confidential invite credential before minting.",
                     icon: Key,
                   },
                   {

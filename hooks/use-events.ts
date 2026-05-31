@@ -1,22 +1,22 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useAccount, useReadContract, useWriteContract } from "wagmi"
+import { useAccount, useReadContract, useWalletClient, useWriteContract } from "wagmi"
 import { createPublicClient, formatEther, http, isAddress, parseEther, parseEventLogs, type AbiEvent } from "viem"
 import { abi } from "@/contracts/abi"
 import {
   APP_CHAIN,
+  APP_DEPLOYMENT,
   APP_RPC_URL,
   ZERO_HASH,
-  decodeEventMetadata,
-  encodeEventMetadata,
-  hashSecret,
+  buildEventMetadataURI,
+  ipfsToGatewayUrl,
+  resolveEventMetadata,
 } from "@/lib/onchain"
+import type { EncryptedUint128ContractInput } from "@/lib/cofhe"
 
-export const CONTRACT_ADDRESS = (
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000"
-) as `0x${string}`
-export const CONTRACT_DEPLOY_BLOCK = BigInt(process.env.NEXT_PUBLIC_CONTRACT_DEPLOY_BLOCK || "0")
+export const CONTRACT_ADDRESS = APP_DEPLOYMENT.contractAddress
+export const CONTRACT_DEPLOY_BLOCK = APP_DEPLOYMENT.deployBlock
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"
 
@@ -29,12 +29,25 @@ export interface Event {
   isPrivate: boolean
   requiresInviteCode: boolean
   requiresWhitelist: boolean
+  requiresConfidentialAccess: boolean
   totalTicketsSold: number
   ticketPrice: string
+  tiers: TicketTier[]
   image: string
   location: string
   category: string
   organizer?: string
+}
+
+export interface TicketTier {
+  id: number
+  name: string
+  capacity: number
+  priceWei: bigint
+  price: string
+  transferable: boolean
+  active: boolean
+  totalSold: number
 }
 
 export interface Ticket {
@@ -43,6 +56,7 @@ export interface Ticket {
   holder: string
   isVIP: boolean
   used: boolean
+  tierId: number
 }
 
 export interface TicketValidation {
@@ -53,6 +67,13 @@ export interface TicketValidation {
 export interface OrganizerPayment {
   eventId: number
   amountWei: bigint
+  transactionHash: `0x${string}`
+  type: "received" | "withdrawn"
+}
+
+export interface WhitelistEntry {
+  wallet: `0x${string}`
+  isWhitelisted: boolean
   transactionHash: `0x${string}`
 }
 
@@ -74,6 +95,16 @@ type ContractEvent = {
   requiresInviteCode: boolean
   requiresWhitelist: boolean
   totalTicketsSold: bigint
+  requiresConfidentialAccess: boolean
+}
+
+type ContractTicketTier = {
+  name: string
+  capacity: bigint
+  priceWei: bigint
+  transferable: boolean
+  active: boolean
+  totalSold: bigint
 }
 
 function ticketPriceToWei(value?: string) {
@@ -93,6 +124,19 @@ function formatTicketPrice(value: bigint) {
   return `${formatEther(value)} ETH`
 }
 
+function contractTierToTicketTier(id: number, raw: ContractTicketTier): TicketTier {
+  return {
+    id,
+    name: raw.name,
+    capacity: Number(raw.capacity),
+    priceWei: raw.priceWei,
+    price: formatTicketPrice(raw.priceWei),
+    transferable: raw.transferable,
+    active: raw.active,
+    totalSold: Number(raw.totalSold),
+  }
+}
+
 function formatEthAmount(value: bigint) {
   if (value === 0n) {
     return "0 ETH"
@@ -101,8 +145,10 @@ function formatEthAmount(value: bigint) {
   return `${formatEther(value)} ETH`
 }
 
-function contractEventToEvent(id: number, raw: ContractEvent, organizer?: string): Event {
-  const metadata = decodeEventMetadata(raw.metadataURI)
+async function contractEventToEvent(id: number, raw: ContractEvent, organizer?: string, tiers: TicketTier[] = []): Promise<Event> {
+  const metadata = await resolveEventMetadata(raw.metadataURI)
+  const activeTiers = tiers.filter((tier) => tier.active)
+  const primaryTier = activeTiers[0] || tiers[0]
   return {
     id,
     name: raw.name,
@@ -112,9 +158,11 @@ function contractEventToEvent(id: number, raw: ContractEvent, organizer?: string
     isPrivate: raw.isPrivate,
     requiresInviteCode: raw.requiresInviteCode,
     requiresWhitelist: raw.requiresWhitelist,
+    requiresConfidentialAccess: raw.requiresConfidentialAccess,
     totalTicketsSold: Number(raw.totalTicketsSold),
-    ticketPrice: metadata.ticketPrice || formatTicketPrice(raw.ticketPriceWei),
-    image: metadata.image || DEFAULT_IMAGE,
+    ticketPrice: primaryTier?.price || metadata.ticketPrice || formatTicketPrice(raw.ticketPriceWei),
+    tiers,
+    image: ipfsToGatewayUrl(metadata.image) || DEFAULT_IMAGE,
     location: metadata.location || "TBD",
     category: metadata.category || "conference",
     organizer,
@@ -123,6 +171,68 @@ function contractEventToEvent(id: number, raw: ContractEvent, organizer?: string
 
 async function waitForReceipt(hash: `0x${string}`) {
   return publicClient.waitForTransactionReceipt({ hash })
+}
+
+function normalizeTierInputs(
+  tiers: Array<{ name: string; capacity: number; price?: string; transferable: boolean; active: boolean }> | undefined,
+  fallbackCapacity: number,
+  fallbackPrice: string,
+) {
+  const suppliedTiers = tiers ?? []
+  const normalizedTiers = suppliedTiers
+    .map((tier) => ({
+      name: tier.name.trim(),
+      capacity: BigInt(Math.max(0, Math.floor(tier.capacity))),
+      priceWei: ticketPriceToWei(tier.price),
+      transferable: tier.transferable,
+      active: tier.active,
+    }))
+
+  if (normalizedTiers.some((tier) => tier.active && (!tier.name || tier.capacity === 0n))) {
+    throw new Error("Active ticket tiers need a name and capacity")
+  }
+
+  const configuredTiers = normalizedTiers
+    .filter((tier) => tier.name && tier.capacity > 0n)
+
+  if (configuredTiers.length > 0) {
+    if (!configuredTiers.some((tier) => tier.active)) {
+      throw new Error("At least one ticket tier must be active")
+    }
+    if (configuredTiers.length > 16) {
+      throw new Error("An event can have at most 16 ticket tiers")
+    }
+    return configuredTiers
+  }
+
+  if (suppliedTiers.length > 0) {
+    throw new Error("At least one valid ticket tier is required")
+  }
+
+  return [
+    {
+      name: "General",
+      capacity: BigInt(fallbackCapacity),
+      priceWei: ticketPriceToWei(fallbackPrice),
+      transferable: true,
+      active: true,
+    },
+  ]
+}
+
+async function readEventTiers(eventId: number): Promise<TicketTier[]> {
+  try {
+    const rawTiers = (await publicClient.readContract({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "getTicketTiers",
+      args: [BigInt(eventId)],
+    })) as ContractTicketTier[]
+
+    return rawTiers.map((tier, index) => contractTierToTicketTier(index, tier))
+  } catch {
+    return []
+  }
 }
 
 function getContractEvent(name: string): AbiEvent {
@@ -182,7 +292,8 @@ export function useEvents() {
                 args: [BigInt(i)],
               }) as Promise<`0x${string}`>,
             ])
-            fetched.push(contractEventToEvent(i, raw, organizer))
+            const tiers = await readEventTiers(i)
+            fetched.push(await contractEventToEvent(i, raw, organizer, tiers))
           } catch {
             // Skip events that cannot be read.
           }
@@ -264,7 +375,7 @@ export function useMyTickets() {
               abi,
               functionName: "getTicket",
               args: [BigInt(ticketId)],
-            })) as [{ eventId: bigint; isVIP: boolean; used: boolean }, ContractEvent]
+            })) as [{ eventId: bigint; isVIP: boolean; used: boolean; tierId: number }, ContractEvent]
 
             return {
               id: ticketId,
@@ -272,6 +383,7 @@ export function useMyTickets() {
               holder,
               isVIP: ticketInfo[0].isVIP,
               used: ticketInfo[0].used,
+              tierId: Number(ticketInfo[0].tierId),
             } satisfies Ticket
           } catch {
             return null
@@ -301,6 +413,7 @@ export function useMyTickets() {
 
 export function useCreateEvent() {
   const { address, chain, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const { writeContractAsync } = useWriteContract()
 
   const createEvent = async (params: {
@@ -316,33 +429,59 @@ export function useCreateEvent() {
     category: string
     image?: string
     inviteCode?: string
+    ticketTiers?: Array<{
+      name: string
+      capacity: number
+      price?: string
+      transferable: boolean
+      active: boolean
+    }>
   }): Promise<{ eventId: bigint; hash: `0x${string}`; inviteCode?: string }> => {
     assertWriteReady(isConnected, chain?.id)
     if (!address) throw new Error("Wallet not connected")
 
-    const ticketPriceWei = ticketPriceToWei(params.ticketPrice)
+    const tiers = normalizeTierInputs(params.ticketTiers, params.maxAttendees, params.ticketPrice)
+    const activeTierCapacity = tiers
+      .filter((tier) => tier.active)
+      .reduce((sum, tier) => sum + Number(tier.capacity), 0)
+    const eventCapacity = Math.max(params.maxAttendees, activeTierCapacity)
+    const ticketPriceWei = tiers[0]?.priceWei ?? ticketPriceToWei(params.ticketPrice)
     const ticketPrice = formatTicketPrice(ticketPriceWei)
-    const metadataURI = encodeEventMetadata({
+    const metadataURI = await buildEventMetadataURI({
+      name: params.name,
+      description: params.description,
       category: params.category,
       image: params.image,
       location: params.location,
       ticketPrice,
     })
+    let encryptedInviteCredential: EncryptedUint128ContractInput | undefined
+
+    if (params.requiresInviteCode && params.inviteCode) {
+      if (!walletClient) {
+        throw new Error("Wallet client is not ready for CoFHE encryption")
+      }
+      const { connectCofhe, encryptCredential } = await import("@/lib/cofhe")
+      await connectCofhe(publicClient, walletClient)
+      encryptedInviteCredential = await encryptCredential(params.inviteCode)
+    }
 
     const hash = await writeContractAsync({
       address: CONTRACT_ADDRESS,
       abi,
-      functionName: "createEvent",
+      functionName: "createEventWithTiers",
       args: [
         params.name,
         params.description,
         metadataURI,
         params.eventDate,
-        BigInt(params.maxAttendees),
+        BigInt(eventCapacity),
         ticketPriceWei,
         params.isPrivate,
         params.requiresInviteCode,
         params.requiresWhitelist,
+        Boolean(params.requiresInviteCode && params.inviteCode),
+        tiers,
       ],
     })
 
@@ -359,14 +498,20 @@ export function useCreateEvent() {
       throw new Error("Event creation transaction did not emit an event ID")
     }
 
-    if (params.requiresInviteCode && params.inviteCode) {
-      const inviteHash = await writeContractAsync({
-        address: CONTRACT_ADDRESS,
-        abi,
-        functionName: "setInviteCode",
-        args: [eventId, hashSecret(params.inviteCode)],
-      })
-      await waitForReceipt(inviteHash)
+    if (encryptedInviteCredential) {
+      try {
+        const inviteHash = await writeContractAsync({
+          address: CONTRACT_ADDRESS,
+          abi,
+          functionName: "setConfidentialInviteCode",
+          args: [eventId, encryptedInviteCredential],
+        })
+        await waitForReceipt(inviteHash)
+      } catch (error) {
+        throw new Error(
+          `Event #${eventId.toString()} was created, but encrypted invite setup failed. Open the event dashboard and rotate the invite code before sharing it. ${error instanceof Error ? error.message : ""}`.trim(),
+        )
+      }
     }
 
     return { hash, eventId, inviteCode: params.inviteCode }
@@ -377,10 +522,12 @@ export function useCreateEvent() {
 
 export function useRegisterForEvent() {
   const { address, chain, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const { writeContractAsync } = useWriteContract()
 
   const register = async (
     eventId: number,
+    tierId = 0,
     accessCode?: string,
   ): Promise<{ hash: `0x${string}`; ticketId: bigint }> => {
     assertWriteReady(isConnected, chain?.id)
@@ -392,13 +539,69 @@ export function useRegisterForEvent() {
       functionName: "getEvent",
       args: [BigInt(eventId)],
     })) as ContractEvent
+    const tiers = await readEventTiers(eventId)
+    const selectedTier = tiers.find((tier) => tier.id === tierId) ?? tiers[0]
+
+    if (!selectedTier) {
+      throw new Error("No ticket tiers are configured for this event")
+    }
+
+    if (rawEvent.requiresConfidentialAccess) {
+      if (!accessCode?.trim()) {
+        throw new Error("This event requires a confidential invite code")
+      }
+      if (!walletClient) {
+        throw new Error("Wallet client is not ready for CoFHE encryption")
+      }
+
+      const { connectCofhe, decryptAccessResult, encryptCredential } = await import("@/lib/cofhe")
+      await connectCofhe(publicClient, walletClient)
+      const encryptedCredential = await encryptCredential(accessCode)
+      const requestHash = await writeContractAsync({
+        address: CONTRACT_ADDRESS,
+        abi,
+        functionName: "requestConfidentialAccess",
+        args: [BigInt(eventId), tierId, encryptedCredential],
+      })
+      const requestReceipt = await waitForReceipt(requestHash)
+      const requestLogs = parseEventLogs({ abi, logs: requestReceipt.logs })
+      const requestedAccess = requestLogs.find((entry) => entry.eventName === "ConfidentialAccessRequested")
+      const accessResult =
+        (requestedAccess?.args.accessResult as `0x${string}` | undefined) ??
+        ((await publicClient.readContract({
+          address: CONTRACT_ADDRESS,
+          abi,
+          functionName: "getPendingConfidentialAccess",
+          args: [BigInt(eventId), address],
+        })) as [`0x${string}`, number, boolean])[0]
+
+      const decryptResult = await decryptAccessResult(accessResult)
+      if (!decryptResult.accessGranted) {
+        throw new Error("Confidential access denied")
+      }
+
+      const hash = await writeContractAsync({
+        address: CONTRACT_ADDRESS,
+        abi,
+        functionName: "mintConfidentialTicket",
+        args: [BigInt(eventId), address, tierId, decryptResult.ctHash, decryptResult.accessGranted, decryptResult.signature],
+        value: selectedTier.priceWei,
+      })
+
+      const receipt = await waitForReceipt(hash)
+      const parsedLogs = parseEventLogs({ abi, logs: receipt.logs })
+      const mintedTicket = parsedLogs.find((entry) => entry.eventName === "TicketMinted")
+      const ticketId = (mintedTicket?.args.ticketId as bigint | undefined) ?? 0n
+
+      return { hash, ticketId }
+    }
 
     const hash = await writeContractAsync({
       address: CONTRACT_ADDRESS,
       abi,
-      functionName: "mintTicket",
-      args: [BigInt(eventId), address, false, accessCode ? hashSecret(accessCode) : ZERO_HASH],
-      value: rawEvent.ticketPriceWei,
+      functionName: "mintTicketForTier",
+      args: [BigInt(eventId), address, tierId, ZERO_HASH],
+      value: selectedTier.priceWei,
     })
 
     const receipt = await waitForReceipt(hash)
@@ -461,7 +664,8 @@ export function useMyEvents() {
             args: [BigInt(i)],
           })) as ContractEvent
 
-          fetched.push(contractEventToEvent(i, raw, organizer))
+          const tiers = await readEventTiers(i)
+          fetched.push(await contractEventToEvent(i, raw, organizer, tiers))
         } catch {
           // Skip events that cannot be read.
         }
@@ -502,21 +706,37 @@ export function useOrganizerRevenue() {
     try {
       const logs = await publicClient.getLogs({
         address: CONTRACT_ADDRESS,
+        event: getContractEvent("TicketPaymentReceived"),
+        args: { organizer: address },
+        fromBlock: CONTRACT_DEPLOY_BLOCK,
+      })
+      const releasedLogs = await publicClient.getLogs({
+        address: CONTRACT_ADDRESS,
         event: getContractEvent("TicketPaymentReleased"),
         args: { organizer: address },
         fromBlock: CONTRACT_DEPLOY_BLOCK,
       })
 
-      setPayments(
-        logs.map((log) => {
+      const receivedPayments = logs.map((log) => {
           const args = (log as unknown as { args: { eventId?: bigint; amount?: bigint } }).args
           return {
             eventId: Number(args.eventId ?? 0n),
             amountWei: args.amount ?? 0n,
             transactionHash: log.transactionHash,
+            type: "received" as const,
           }
-        }),
-      )
+        })
+      const withdrawnPayments = releasedLogs.map((log) => {
+        const args = (log as unknown as { args: { eventId?: bigint; amount?: bigint } }).args
+        return {
+          eventId: Number(args.eventId ?? 0n),
+          amountWei: args.amount ?? 0n,
+          transactionHash: log.transactionHash,
+          type: "withdrawn" as const,
+        }
+      })
+
+      setPayments([...receivedPayments, ...withdrawnPayments])
     } catch (err) {
       console.error("Error fetching organizer revenue:", err)
       setPayments([])
@@ -533,29 +753,142 @@ export function useOrganizerRevenue() {
     void run()
   }, [fetchRevenue])
 
-  const totalWei = payments.reduce((sum, payment) => sum + payment.amountWei, 0n)
+  const totalWei = payments
+    .filter((payment) => payment.type === "received")
+    .reduce((sum, payment) => sum + payment.amountWei, 0n)
+  const withdrawnWei = payments
+    .filter((payment) => payment.type === "withdrawn")
+    .reduce((sum, payment) => sum + payment.amountWei, 0n)
+  const pendingWei = totalWei > withdrawnWei ? totalWei - withdrawnWei : 0n
 
   return {
     loading,
     payments,
     refetch: fetchRevenue,
+    pendingRevenue: formatEthAmount(pendingWei),
+    pendingWei,
     totalRevenue: formatEthAmount(totalWei),
     totalWei,
+    withdrawnRevenue: formatEthAmount(withdrawnWei),
+    withdrawnWei,
   }
+}
+
+export function useEventPendingRevenue(eventId: number) {
+  const [pendingWei, setPendingWei] = useState(0n)
+  const [loading, setLoading] = useState(false)
+
+  const fetchPendingRevenue = useCallback(async () => {
+    if (!isContractDeployed || !Number.isInteger(eventId) || eventId < 0) {
+      setPendingWei(0n)
+      return
+    }
+
+    setLoading(true)
+    try {
+      const amount = (await publicClient.readContract({
+        address: CONTRACT_ADDRESS,
+        abi,
+        functionName: "eventPendingRevenue",
+        args: [BigInt(eventId)],
+      })) as bigint
+
+      setPendingWei(amount)
+    } catch (err) {
+      console.error("Error fetching pending event revenue:", err)
+      setPendingWei(0n)
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId])
+
+  useEffect(() => {
+    const run = async () => {
+      await fetchPendingRevenue()
+    }
+
+    void run()
+  }, [fetchPendingRevenue])
+
+  return {
+    loading,
+    pendingRevenue: formatEthAmount(pendingWei),
+    pendingWei,
+    refetch: fetchPendingRevenue,
+  }
+}
+
+export function useEventWhitelist(eventId: number) {
+  const [entries, setEntries] = useState<WhitelistEntry[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchWhitelist = useCallback(async () => {
+    if (!isContractDeployed || !Number.isInteger(eventId) || eventId < 0) {
+      setEntries([])
+      return
+    }
+
+    setLoading(true)
+    try {
+      const logs = await publicClient.getLogs({
+        address: CONTRACT_ADDRESS,
+        event: getContractEvent("WhitelistUpdated"),
+        args: { eventId: BigInt(eventId) },
+        fromBlock: CONTRACT_DEPLOY_BLOCK,
+      })
+      const latest = new Map<string, WhitelistEntry>()
+
+      for (const log of logs) {
+        const args = (log as unknown as { args: { wallet?: `0x${string}`; isWhitelisted?: boolean } }).args
+        if (args.wallet) {
+          latest.set(args.wallet.toLowerCase(), {
+            wallet: args.wallet,
+            isWhitelisted: Boolean(args.isWhitelisted),
+            transactionHash: log.transactionHash,
+          })
+        }
+      }
+
+      setEntries([...latest.values()].sort((left, right) => left.wallet.localeCompare(right.wallet)))
+    } catch (err) {
+      console.error("Error fetching whitelist:", err)
+      setEntries([])
+    } finally {
+      setLoading(false)
+    }
+  }, [eventId])
+
+  useEffect(() => {
+    const run = async () => {
+      await fetchWhitelist()
+    }
+
+    void run()
+  }, [fetchWhitelist])
+
+  return { entries, loading, refetch: fetchWhitelist }
 }
 
 export function useManageEventAccess() {
   const { chain, isConnected } = useAccount()
+  const { data: walletClient } = useWalletClient()
   const { writeContractAsync } = useWriteContract()
 
   const updateInviteCode = async (eventId: number, inviteCode: string) => {
     assertWriteReady(isConnected, chain?.id)
+    if (!walletClient) {
+      throw new Error("Wallet client is not ready for CoFHE encryption")
+    }
+
+    const { connectCofhe, encryptCredential } = await import("@/lib/cofhe")
+    await connectCofhe(publicClient, walletClient)
+    const encryptedCredential = await encryptCredential(inviteCode)
 
     const hash = await writeContractAsync({
       address: CONTRACT_ADDRESS,
       abi,
-      functionName: "setInviteCode",
-      args: [BigInt(eventId), hashSecret(inviteCode)],
+      functionName: "setConfidentialInviteCode",
+      args: [BigInt(eventId), encryptedCredential],
     })
 
     await waitForReceipt(hash)
@@ -575,6 +908,66 @@ export function useManageEventAccess() {
       abi,
       functionName: wallets.length === 1 ? "addToWhitelist" : "batchAddToWhitelist",
       args: wallets.length === 1 ? [BigInt(eventId), wallets[0]] : [BigInt(eventId), wallets],
+    })
+
+    await waitForReceipt(hash)
+    return hash
+  }
+
+  const updateTicketTier = async (
+    eventId: number,
+    tier: { id: number; name: string; capacity: number; price?: string; transferable: boolean; active: boolean },
+  ) => {
+    assertWriteReady(isConnected, chain?.id)
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "setTicketTier",
+      args: [
+        BigInt(eventId),
+        tier.id,
+        tier.name,
+        BigInt(Math.max(1, Math.floor(tier.capacity))),
+        ticketPriceToWei(tier.price),
+        tier.transferable,
+        tier.active,
+      ],
+    })
+
+    await waitForReceipt(hash)
+    return hash
+  }
+
+  const updateTierCondition = async (eventId: number, tierId: number, conditionCode: string) => {
+    assertWriteReady(isConnected, chain?.id)
+    if (!walletClient) {
+      throw new Error("Wallet client is not ready for CoFHE encryption")
+    }
+
+    const { connectCofhe, encryptCredential } = await import("@/lib/cofhe")
+    await connectCofhe(publicClient, walletClient)
+    const encryptedCondition = await encryptCredential(conditionCode)
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "setEncryptedTierCondition",
+      args: [BigInt(eventId), tierId, encryptedCondition],
+    })
+
+    await waitForReceipt(hash)
+    return hash
+  }
+
+  const withdrawEventRevenue = async (eventId: number) => {
+    assertWriteReady(isConnected, chain?.id)
+
+    const hash = await writeContractAsync({
+      address: CONTRACT_ADDRESS,
+      abi,
+      functionName: "withdrawEventRevenue",
+      args: [BigInt(eventId)],
     })
 
     await waitForReceipt(hash)
@@ -619,7 +1012,9 @@ export function useManageEventAccess() {
 
     const ticketPriceWei = ticketPriceToWei(params.ticketPrice)
     const ticketPrice = formatTicketPrice(ticketPriceWei)
-    const metadataURI = encodeEventMetadata({
+    const metadataURI = await buildEventMetadataURI({
+      name: params.name,
+      description: params.description,
       category: params.category,
       image: params.image,
       location: params.location,
@@ -648,7 +1043,15 @@ export function useManageEventAccess() {
     return hash
   }
 
-  return { addWhitelist, removeWhitelist, updateEvent, updateInviteCode }
+  return {
+    addWhitelist,
+    removeWhitelist,
+    updateEvent,
+    updateInviteCode,
+    updateTicketTier,
+    updateTierCondition,
+    withdrawEventRevenue,
+  }
 }
 
 export function useTicketActions() {
@@ -713,7 +1116,7 @@ export function useTicketActions() {
         abi,
         functionName: "getTicket",
         args: [BigInt(ticketId)],
-      }) as Promise<[{ eventId: bigint; isVIP: boolean; used: boolean }, ContractEvent]>,
+      }) as Promise<[{ eventId: bigint; isVIP: boolean; used: boolean; tierId: number }, ContractEvent]>,
       publicClient.readContract({
         address: CONTRACT_ADDRESS,
         abi,
@@ -729,6 +1132,7 @@ export function useTicketActions() {
       functionName: "getEventOrganizer",
       args: [BigInt(eventId)],
     })) as `0x${string}`
+    const tiers = await readEventTiers(eventId)
 
     return {
       ticket: {
@@ -737,8 +1141,9 @@ export function useTicketActions() {
         holder,
         isVIP: ticketInfo[0].isVIP,
         used: ticketInfo[0].used,
+        tierId: Number(ticketInfo[0].tierId),
       },
-      event: contractEventToEvent(eventId, ticketInfo[1], organizer),
+      event: await contractEventToEvent(eventId, ticketInfo[1], organizer, tiers),
     }
   }
 

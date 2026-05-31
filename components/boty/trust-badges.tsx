@@ -6,8 +6,8 @@ import { Shield, Lock, Eye, Zap } from "lucide-react"
 const badges = [
   {
     icon: Shield,
-    title: "Hashed Access",
-    description: "Invite codes stay off-chain"
+    title: "Encrypted Access",
+    description: "Invite credentials stay confidential"
   },
   {
     icon: Lock,
@@ -21,8 +21,8 @@ const badges = [
   },
   {
     icon: Zap,
-    title: "CoFHE Roadmap",
-    description: "Sepolia FHE path documented"
+    title: "CoFHE Sepolia",
+    description: "FHE invite checks are live"
   }
 ]
 

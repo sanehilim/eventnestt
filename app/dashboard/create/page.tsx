@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff } from "lucide-react"
+import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff, Plus, Trash2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
 import { useCreateEvent } from "@/hooks/use-events"
 import { readDashboardSettings } from "@/lib/dashboard-settings"
-import { APP_CHAIN } from "@/lib/onchain"
+import { APP_CHAIN, dateInputToEventTimestamp } from "@/lib/onchain"
 
 const steps = [
   { id: 1, name: "Basic Info", icon: Calendar },
@@ -17,6 +17,12 @@ const steps = [
   { id: 3, name: "Ticketing", icon: Ticket },
   { id: 4, name: "Review", icon: Check }
 ]
+
+function generateInviteCode() {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return `EVENT-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").toUpperCase()}`
+}
 
 export default function CreateEventPage() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -40,11 +46,23 @@ export default function CreateEventPage() {
     requiresWhitelist: false,
     maxAttendees: 100,
     ticketPrice: "",
-    image: ""
+    image: "",
+    ticketTiers: [
+      { name: "General", capacity: 100, price: "", transferable: true, active: true },
+      { name: "VIP", capacity: 25, price: "0.08", transferable: false, active: false },
+      { name: "Speaker", capacity: 10, price: "", transferable: false, active: false },
+      { name: "Sponsor", capacity: 15, price: "0.2", transferable: false, active: false },
+      { name: "DAO Member", capacity: 50, price: "0.02", transferable: true, active: false },
+    ],
   })
   const privateEventMissingAccessRule =
     formData.isPrivate && !formData.requiresInviteCode && !formData.requiresWhitelist
   const cannotContinue = currentStep === 2 && privateEventMissingAccessRule
+  const activeTiers = formData.ticketTiers.filter((tier) => tier.active)
+  const totalTierCapacity = activeTiers.reduce((sum, tier) => sum + tier.capacity, 0)
+  const noActiveTier = activeTiers.length === 0
+  const tooManyTiers = formData.ticketTiers.length > 16
+  const cannotGoNext = cannotContinue || (currentStep === 3 && (noActiveTier || tooManyTiers))
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -60,13 +78,49 @@ export default function CreateEventPage() {
     return () => window.clearTimeout(timer)
   }, [address])
 
+  const updateTier = (
+    index: number,
+    patch: Partial<(typeof formData.ticketTiers)[number]>,
+  ) => {
+    setFormData((current) => ({
+      ...current,
+      ticketTiers: current.ticketTiers.map((tier, tierIndex) =>
+        tierIndex === index ? { ...tier, ...patch } : tier,
+      ),
+    }))
+  }
+
+  const addTier = () => {
+    setFormData((current) => ({
+      ...current,
+      ticketTiers: [
+        ...current.ticketTiers,
+        { name: "Custom", capacity: 25, price: "", transferable: true, active: true },
+      ],
+    }))
+  }
+
+  const removeTier = (index: number) => {
+    setFormData((current) => ({
+      ...current,
+      ticketTiers: current.ticketTiers.filter((_, tierIndex) => tierIndex !== index),
+    }))
+  }
+
   const handleSubmit = async () => {
-    const eventTimestamp = new Date(formData.date).getTime()
-    if (!formData.name.trim() || !formData.date || Number.isNaN(eventTimestamp)) {
+    if (!formData.name.trim() || !formData.date) {
       return
     }
     if (privateEventMissingAccessRule) {
       setSubmitError("Private events must require an invite code or whitelist.")
+      return
+    }
+    if (noActiveTier) {
+      setSubmitError("Add at least one active ticket tier.")
+      return
+    }
+    if (tooManyTiers) {
+      setSubmitError("Events can have at most 16 ticket tiers.")
       return
     }
 
@@ -74,14 +128,14 @@ export default function CreateEventPage() {
     setIsSubmitting(true)
     try {
       const inviteCode = formData.requiresInviteCode
-        ? `EVENT-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+        ? generateInviteCode()
         : undefined
 
       const { hash } = await createEvent({
         name: formData.name,
         description: formData.description,
-        eventDate: BigInt(eventTimestamp),
-        maxAttendees: formData.maxAttendees,
+        eventDate: dateInputToEventTimestamp(formData.date),
+        maxAttendees: Math.max(formData.maxAttendees, totalTierCapacity),
         isPrivate: formData.isPrivate,
         requiresInviteCode: formData.requiresInviteCode,
         requiresWhitelist: formData.requiresWhitelist,
@@ -90,6 +144,7 @@ export default function CreateEventPage() {
         category: formData.category,
         image: formData.image,
         inviteCode,
+        ticketTiers: formData.ticketTiers,
       })
       setTxHash(hash)
       setGeneratedInviteCode(inviteCode || "")
@@ -141,11 +196,11 @@ export default function CreateEventPage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
-                  Organizer access controls are stored on-chain
+                  Confidential invite credential encrypted with CoFHE
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-4 h-4 text-[#10b981]" />
-                  NFT tickets minted for verification
+                  Tiered NFT tickets minted for verification
                 </li>
               </ul>
             </div>
@@ -397,7 +452,7 @@ export default function CreateEventPage() {
                     <span className="font-medium text-[#0f766e]">On-Chain Access Rules</span>
                   </div>
                   <p className="text-sm text-[#666666]">
-                    Invite-code and whitelist settings are stored on-chain and enforced when attendees register.
+                    Invite credentials use CoFHE encrypted inputs; whitelist settings are enforced by the contract.
                   </p>
                 </div>
                 {privateEventMissingAccessRule && (
@@ -411,21 +466,101 @@ export default function CreateEventPage() {
             {/* Step 3: Ticketing */}
             {currentStep === 3 && (
               <div className="space-y-6">
-                <h2 className="text-2xl text-[#1a1a1a] mb-6">Ticketing</h2>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Ticket Price (ETH)</label>
-                  <input
-                    type="text"
-                    value={formData.ticketPrice}
-                    onChange={(e) => setFormData({ ...formData, ticketPrice: e.target.value })}
-                    placeholder="0.05"
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
-                  />
-                  <p className="text-xs text-[#999999] mt-2">
-                    Leave empty for free events.
-                  </p>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <h2 className="text-2xl text-[#1a1a1a]">Ticket Tiers</h2>
+                    <p className="mt-1 text-sm text-[#666666]">
+                      Configure capacity, pricing, and transfer rules per tier.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addTier}
+                    disabled={formData.ticketTiers.length >= 16}
+                    className="inline-flex items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 text-sm font-medium text-[#1a1a1a] boty-transition hover:bg-[#eeeeee] disabled:opacity-50"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Tier
+                  </button>
                 </div>
+
+                <div className="space-y-4">
+                  {formData.ticketTiers.map((tier, index) => (
+                    <div key={`${tier.name}-${index}`} className="rounded-lg border border-[#e5e5e5] bg-white p-4">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <label className="flex items-center gap-3 text-sm font-medium text-[#1a1a1a]">
+                          <input
+                            type="checkbox"
+                            checked={tier.active}
+                            onChange={(event) => updateTier(index, { active: event.target.checked })}
+                            className="h-4 w-4 accent-[#0f766e]"
+                          />
+                          Active tier
+                        </label>
+                        {formData.ticketTiers.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeTier(index)}
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[#e5e5e5] text-[#666666] hover:bg-[#f5f5f5] hover:text-[#ef4444]"
+                            aria-label="Remove tier"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-[1fr_120px_140px_150px]">
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-medium text-[#1a1a1a]">Tier Name</span>
+                          <input
+                            type="text"
+                            value={tier.name}
+                            onChange={(event) => updateTier(index, { name: event.target.value })}
+                            className="w-full rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-medium text-[#1a1a1a]">Capacity</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={tier.capacity}
+                            onChange={(event) => updateTier(index, { capacity: Number(event.target.value) || 0 })}
+                            className="w-full rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-medium text-[#1a1a1a]">Price ETH</span>
+                          <input
+                            type="text"
+                            value={tier.price}
+                            onChange={(event) => updateTier(index, { price: event.target.value })}
+                            placeholder="Free"
+                            className="w-full rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                          />
+                        </label>
+                        <label className="flex items-end gap-3 pb-3 text-sm font-medium text-[#1a1a1a]">
+                          <input
+                            type="checkbox"
+                            checked={tier.transferable}
+                            onChange={(event) => updateTier(index, { transferable: event.target.checked })}
+                            className="h-4 w-4 accent-[#0f766e]"
+                          />
+                          Transferable
+                        </label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-lg border border-[#0f766e]/20 bg-[#0f766e]/10 p-4 text-sm text-[#0f766e]">
+                  {activeTiers.length} active tier{activeTiers.length === 1 ? "" : "s"} with {totalTierCapacity} total seats.
+                </div>
+                {tooManyTiers && (
+                  <p className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] px-4 py-3 text-sm text-[#92400e]">
+                    Events can have at most 16 ticket tiers on-chain.
+                  </p>
+                )}
               </div>
             )}
 
@@ -451,11 +586,11 @@ export default function CreateEventPage() {
                     </div>
                     <div className="flex justify-between">
                       <dt className="text-[#666666]">Max Attendees</dt>
-                      <dd className="text-[#1a1a1a]">{formData.maxAttendees}</dd>
+                      <dd className="text-[#1a1a1a]">{Math.max(formData.maxAttendees, totalTierCapacity)}</dd>
                     </div>
                     <div className="flex justify-between">
-                      <dt className="text-[#666666]">Ticket Price</dt>
-                      <dd className="text-[#0f766e]">{formData.ticketPrice ? `${formData.ticketPrice} ETH` : "Free"}</dd>
+                      <dt className="text-[#666666]">Ticket Tiers</dt>
+                      <dd className="text-[#0f766e]">{activeTiers.length} active</dd>
                     </div>
                     <div className="flex justify-between gap-4">
                       <dt className="text-[#666666]">Image</dt>
@@ -502,7 +637,7 @@ export default function CreateEventPage() {
                   <button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={isSubmitting || !formData.name.trim() || !formData.date || privateEventMissingAccessRule}
+                    disabled={isSubmitting || !formData.name.trim() || !formData.date || privateEventMissingAccessRule || noActiveTier}
                     className="w-full bg-[#0f766e] text-white px-8 py-4 rounded-full text-sm font-medium boty-transition hover:bg-[#0d6b63] boty-shadow disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
@@ -538,7 +673,7 @@ export default function CreateEventPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(Math.min(4, currentStep + 1))}
-                  disabled={cannotContinue}
+                  disabled={cannotGoNext}
                   className="inline-flex items-center gap-2 bg-[#1a1a1a] text-white px-6 py-3 rounded-full text-sm font-medium boty-transition hover:bg-[#333] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next

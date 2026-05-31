@@ -12,10 +12,14 @@ if (fs.existsSync(nextDir)) {
 
 const child = spawn(process.execPath, [nextCli, "build"], {
   cwd: rootDir,
+  env: {
+    ...process.env,
+    NEXT_TELEMETRY_DISABLED: "1",
+  },
   stdio: "inherit",
   shell: false,
 })
 
-child.on("exit", (code) => {
+child.on("close", (code) => {
   process.exit(code ?? 1)
 })

@@ -17,7 +17,7 @@ const testimonials = [
     name: "Sarah Miller",
     location: "Berlin",
     rating: 5,
-    text: "Finally, an event platform that respects privacy. The hashed invite-code flow is seamless for attendees and easy to audit.",
+    text: "Finally, an event platform that respects privacy. The encrypted invite flow is seamless for attendees and easy to audit.",
     event: "Underground Rave"
   },
   {
@@ -25,7 +25,7 @@ const testimonials = [
     name: "Marcus Johnson",
     location: "London",
     rating: 5,
-    text: "The Fhenix roadmap is clear, and the current allowlist tooling already handles our exclusive pre-sale access.",
+    text: "The Fhenix integration is clear, and the allowlist tooling already handles our exclusive pre-sale access.",
     event: "DeFi Conference"
   },
   {
@@ -73,7 +73,7 @@ const testimonials = [
     name: "Ryan Lee",
     location: "Singapore",
     rating: 5,
-    text: "Built with Fhenix in mind and usable today on Sepolia. This is exactly what Web3 events needed.",
+    text: "Built with Fhenix and usable today on Sepolia. This is exactly what Web3 events needed.",
     event: "Web3 Summit"
   }
 ]

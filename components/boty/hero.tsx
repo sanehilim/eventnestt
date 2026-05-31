@@ -35,7 +35,7 @@ export function Hero() {
               <span className="block animate-blur-in opacity-0 font-semibold text-5xl md:text-7xl" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>On-chain event tickets</span>
             </h1>
             <p className="text-lg leading-relaxed mb-10 max-w-md mx-auto lg:mx-0 text-[#666666] animate-blur-in opacity-0" style={{ animationDelay: '0.8s', animationFillMode: 'forwards' }}>
-              Create public or gated events with paid NFT tickets, invite codes, wallet allowlists, QR entry validation, and Fhenix-aligned privacy controls.
+              Create public or gated events with paid NFT tickets, confidential invite credentials, wallet allowlists, QR entry validation, and Fhenix privacy controls.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-blur-in opacity-0" style={{ animationDelay: '1s', animationFillMode: 'forwards' }}>
               <Link

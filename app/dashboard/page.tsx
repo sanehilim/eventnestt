@@ -12,12 +12,14 @@ import { useMyEvents, useOrganizerRevenue } from "@/hooks/use-events"
 export default function DashboardPage() {
   const { isConnected, address } = useAccount()
   const { events, loading } = useMyEvents()
-  const { loading: revenueLoading, totalRevenue } = useOrganizerRevenue()
+  const { loading: revenueLoading, pendingRevenue, totalRevenue } = useOrganizerRevenue()
 
   const stats = useMemo(() => {
     const totalEvents = events.length
     const totalAttendees = events.reduce((sum, event) => sum + event.totalTicketsSold, 0)
-    const gatedEvents = events.filter((event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist).length
+    const gatedEvents = events.filter(
+      (event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess,
+    ).length
     const gatedRatio = totalEvents > 0 ? Math.round((gatedEvents / totalEvents) * 100) : 0
 
     return [
@@ -36,7 +38,7 @@ export default function DashboardPage() {
       {
         label: "Revenue",
         value: totalRevenue,
-        change: totalEvents > 0 ? "From payment events" : "No paid tickets yet",
+        change: totalEvents > 0 ? `Pending ${pendingRevenue}` : "No paid tickets yet",
         icon: DollarSign,
       },
       {
@@ -46,7 +48,7 @@ export default function DashboardPage() {
         icon: Shield,
       },
     ]
-  }, [events, totalRevenue])
+  }, [events, pendingRevenue, totalRevenue])
 
   const totalMinted = useMemo(
     () => events.reduce((sum, event) => sum + event.totalTicketsSold, 0),

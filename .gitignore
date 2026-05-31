@@ -2,6 +2,8 @@
 
 # dependencies
 /node_modules
+/.npm-cache
+/cache/
 
 # next.js
 /.next/
@@ -16,6 +18,8 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 *.log
+.codex-review-*.out
+.codex-review-*.err
 
 # env files
 .env*

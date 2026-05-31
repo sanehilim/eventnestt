@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { AlertTriangle, Check, ChevronDown, Loader2, LogOut, Wallet } from "lucide-react"
 import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi"
+import type { Connector } from "wagmi"
 import { APP_CHAIN } from "@/lib/onchain"
 
 type WalletConnectButtonProps = {
@@ -37,9 +38,9 @@ export function WalletConnectButton({
   const { switchChain, isPending: isSwitching } = useSwitchChain()
 
   const isWrongChain = isConnected && chain?.id !== APP_CHAIN.id
-  const uniqueConnectors = useMemo(() => {
+  const uniqueConnectors = useMemo<Connector[]>(() => {
     const seen = new Set<string>()
-    return connectors.filter((connector) => {
+    return connectors.filter((connector: Connector) => {
       const key = `${connector.uid}-${connector.name}`
       if (seen.has(key)) return false
       seen.add(key)
@@ -71,7 +72,7 @@ export function WalletConnectButton({
     className ||
     cx(baseButtonClass, "bg-[#0f766e] text-white hover:bg-[#0d6b63] boty-shadow")
 
-  const connectWallet = async (connector: (typeof uniqueConnectors)[number]) => {
+  const connectWallet = async (connector: Connector) => {
     setConnectingUid(connector.uid)
     try {
       await connectAsync({ connector })

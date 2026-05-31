@@ -6,24 +6,20 @@ import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { CONTRACT_ADDRESS, useEvents, useMyTickets, useTicketActions } from "@/hooks/use-events"
-import { Ticket, Calendar, MapPin, ArrowRight, Star, Lock, Loader2, Send, ShieldCheck } from "lucide-react"
+import { Ticket, Calendar, MapPin, ArrowRight, Star, Lock, Loader2, Send, ShieldCheck, Trash2 } from "lucide-react"
 import { useAccount } from "wagmi"
 import { QRCodeSVG } from "qrcode.react"
+import { formatEventDate } from "@/lib/onchain"
 
 function formatDate(timestamp: bigint): string {
-  try {
-    const date = new Date(Number(timestamp))
-    return date.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })
-  } catch {
-    return "Date TBA"
-  }
+  return formatEventDate(timestamp, { weekday: "long", month: "long", day: "numeric", year: "numeric" })
 }
 
 export default function TicketsPage() {
   const { isConnected } = useAccount()
   const { tickets, loading, refetch } = useMyTickets()
   const { events } = useEvents()
-  const { transferTicket } = useTicketActions()
+  const { burnTicket, transferTicket } = useTicketActions()
   const [transferDrafts, setTransferDrafts] = useState<Record<number, string>>({})
   const [busyTicketId, setBusyTicketId] = useState<number | null>(null)
   const [actionMessage, setActionMessage] = useState<Record<number, string>>({})
@@ -46,6 +42,23 @@ export default function TicketsPage() {
       setActionMessage((current) => ({
         ...current,
         [ticketId]: error instanceof Error ? error.message : "Transfer failed.",
+      }))
+    } finally {
+      setBusyTicketId(null)
+    }
+  }
+
+  const handleBurn = async (ticketId: number) => {
+    setBusyTicketId(ticketId)
+    setActionMessage((current) => ({ ...current, [ticketId]: "" }))
+    try {
+      await burnTicket(ticketId)
+      setActionMessage((current) => ({ ...current, [ticketId]: "Ticket burned on-chain." }))
+      await refetch()
+    } catch (error) {
+      setActionMessage((current) => ({
+        ...current,
+        [ticketId]: error instanceof Error ? error.message : "Burn failed.",
       }))
     } finally {
       setBusyTicketId(null)
@@ -99,6 +112,10 @@ export default function TicketsPage() {
             <div className="grid gap-6">
               {tickets.map((ticket) => {
                 const event = events.find(e => e.id === ticket.eventId)
+                const tier = event?.tiers.find((entry) => entry.id === ticket.tierId)
+                const isGated = Boolean(event && (event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess))
+                const transferDisabled = ticket.used || busyTicketId === ticket.id || tier?.transferable === false
+                const burnDisabled = ticket.used || busyTicketId === ticket.id
                 const qrPayload = JSON.stringify({
                   app: "EventNest",
                   contract: CONTRACT_ADDRESS,
@@ -125,6 +142,11 @@ export default function TicketsPage() {
                           <h3 className="text-xl text-[#1a1a1a] font-medium">
                             {event?.name || `Event #${ticket.eventId}`}
                           </h3>
+                          {tier && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#0f766e]/10 text-[#0f766e]">
+                              {tier.name}
+                            </span>
+                          )}
                           {ticket.isVIP && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-[#f59e0b]/10 text-[#f59e0b]">
                               <Star className="w-3 h-3" />
@@ -168,14 +190,14 @@ export default function TicketsPage() {
                                 }))
                               }
                               placeholder="0x recipient wallet"
-                              disabled={ticket.used || busyTicketId === ticket.id}
+                              disabled={transferDisabled}
                               className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-sm text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 disabled:opacity-60"
                             />
                           </div>
                           <button
                             type="button"
                             onClick={() => handleTransfer(ticket.id)}
-                            disabled={ticket.used || busyTicketId === ticket.id}
+                            disabled={transferDisabled}
                             className="inline-flex items-center justify-center gap-2 self-end bg-[#1a1a1a] text-white px-5 py-3 rounded-lg text-sm font-medium boty-transition hover:bg-[#333] disabled:opacity-50"
                           >
                             {busyTicketId === ticket.id ? (
@@ -185,6 +207,28 @@ export default function TicketsPage() {
                             )}
                             Transfer
                           </button>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleBurn(ticket.id)}
+                            disabled={burnDisabled}
+                            className="inline-flex items-center justify-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-5 py-3 text-sm font-medium text-[#ef4444] boty-transition hover:bg-[#fef2f2] disabled:opacity-50"
+                          >
+                            {busyTicketId === ticket.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                            Burn Ticket
+                          </button>
+                          {ticket.used && (
+                            <span className="text-xs text-[#666666]">Used tickets stay locked for entry history.</span>
+                          )}
+                          {isGated && !ticket.used && tier?.transferable !== false && (
+                            <span className="text-xs text-[#666666]">Protected-event transfers require an organizer-approved recipient wallet.</span>
+                          )}
                         </div>
 
                         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">

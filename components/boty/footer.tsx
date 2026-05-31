@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Instagram, Github, Twitter, Shield, Lock, Globe } from "lucide-react"
+import { Shield, Lock, Globe, Mail } from "lucide-react"
 
 const footerLinks = {
   events: [
@@ -25,7 +25,7 @@ const footerLinks = {
   support: [
     { name: "Help Center", href: "/privacy" },
     { name: "Contact Us", href: "mailto:hello@eventnest.app" },
-    { name: "Terms of Service", href: "/privacy" },
+    { name: "Terms of Service", href: "/terms" },
     { name: "Privacy Policy", href: "/privacy" }
   ]
 }
@@ -52,31 +52,11 @@ export function Footer() {
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="mailto:hello@eventnest.app"
                 className="w-10 h-10 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#666666] hover:text-[#1a1a1a] boty-transition boty-shadow"
-                aria-label="Twitter"
+                aria-label="Email EventNest"
               >
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#666666] hover:text-[#1a1a1a] boty-transition boty-shadow"
-                aria-label="GitHub"
-              >
-                <Github className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-[#f5f5f5] flex items-center justify-center text-[#666666] hover:text-[#1a1a1a] boty-transition boty-shadow"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-4 h-4" />
+                <Mail className="w-4 h-4" />
               </a>
             </div>
           </div>
@@ -137,11 +117,11 @@ export function Footer() {
         <div className="flex flex-wrap justify-center gap-6 mb-12 pb-8 border-b border-[#e5e5e5]">
           <div className="flex items-center gap-2 text-[#666666] text-sm">
             <Shield className="w-4 h-4 text-[#0f766e]" />
-            <span>Hashed Access</span>
+            <span>Encrypted Access</span>
           </div>
           <div className="flex items-center gap-2 text-[#666666] text-sm">
             <Lock className="w-4 h-4 text-[#0f766e]" />
-            <span>CoFHE Roadmap</span>
+            <span>CoFHE Sepolia</span>
           </div>
           <div className="flex items-center gap-2 text-[#666666] text-sm">
             <Globe className="w-4 h-4 text-[#0f766e]" />
@@ -156,10 +136,10 @@ export function Footer() {
               &copy; {new Date().getFullYear()} EventNest. All rights reserved.
             </p>
             <div className="flex gap-6">
-              <Link href="#" className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition">
+              <Link href="/privacy" className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition">
                 Privacy Policy
               </Link>
-              <Link href="#" className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition">
+              <Link href="/terms" className="text-sm text-[#666666] hover:text-[#1a1a1a] boty-transition">
                 Terms of Service
               </Link>
             </div>

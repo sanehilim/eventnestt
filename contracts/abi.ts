@@ -108,8 +108,19 @@ export const abi = [
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "InvalidShortString",
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "got",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint8",
+        "name": "expected",
+        "type": "uint8"
+      }
+    ],
+    "name": "InvalidEncryptedInput",
     "type": "error"
   },
   {
@@ -120,12 +131,17 @@ export const abi = [
   {
     "inputs": [
       {
-        "internalType": "string",
-        "name": "str",
-        "type": "string"
+        "internalType": "int32",
+        "name": "value",
+        "type": "int32"
       }
     ],
-    "name": "StringTooLong",
+    "name": "SecurityZoneOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "TierCapacityTooHigh",
     "type": "error"
   },
   {
@@ -207,25 +223,100 @@ export const abi = [
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
+        "indexed": true,
         "internalType": "uint256",
-        "name": "_fromTokenId",
+        "name": "eventId",
         "type": "uint256"
       },
       {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "_toTokenId",
-        "type": "uint256"
+        "indexed": true,
+        "internalType": "address",
+        "name": "requester",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
       }
     ],
-    "name": "BatchMetadataUpdate",
+    "name": "ConfidentialAccessClaimed",
     "type": "event"
   },
   {
     "anonymous": false,
-    "inputs": [],
-    "name": "EIP712DomainChanged",
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "requester",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "accessResult",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ConfidentialAccessRequested",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "credentialHandle",
+        "type": "bytes32"
+      }
+    ],
+    "name": "ConfidentialInviteCodeUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "conditionHandle",
+        "type": "bytes32"
+      }
+    ],
+    "name": "EncryptedTierConditionUpdated",
     "type": "event"
   },
   {
@@ -276,32 +367,6 @@ export const abi = [
       }
     ],
     "name": "EventUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "eventId",
-        "type": "uint256"
-      }
-    ],
-    "name": "InviteCodeUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "_tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "MetadataUpdate",
     "type": "event"
   },
   {
@@ -407,7 +472,81 @@ export const abi = [
         "type": "uint256"
       }
     ],
+    "name": "TicketPaymentReceived",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "organizer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      }
+    ],
     "name": "TicketPaymentReleased",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "capacity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "priceWei",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "transferable",
+        "type": "bool"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "name": "TicketTierUpdated",
     "type": "event"
   },
   {
@@ -459,6 +598,19 @@ export const abi = [
     ],
     "name": "WhitelistUpdated",
     "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_TIERS_PER_EVENT",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
     "inputs": [
@@ -549,6 +701,25 @@ export const abi = [
   {
     "inputs": [
       {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "confidentialInviteConfigured",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "string",
         "name": "name",
         "type": "string"
@@ -606,14 +777,7 @@ export const abi = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "eip712Domain",
-    "outputs": [
-      {
-        "internalType": "bytes1",
-        "name": "fields",
-        "type": "bytes1"
-      },
+    "inputs": [
       {
         "internalType": "string",
         "name": "name",
@@ -621,28 +785,112 @@ export const abi = [
       },
       {
         "internalType": "string",
-        "name": "version",
+        "name": "description",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "metadataURI",
         "type": "string"
       },
       {
         "internalType": "uint256",
-        "name": "chainId",
+        "name": "eventDate",
         "type": "uint256"
       },
       {
-        "internalType": "address",
-        "name": "verifyingContract",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "maxAttendees",
+        "type": "uint256"
       },
       {
-        "internalType": "bytes32",
-        "name": "salt",
-        "type": "bytes32"
+        "internalType": "uint256",
+        "name": "ticketPriceWei",
+        "type": "uint256"
       },
       {
-        "internalType": "uint256[]",
-        "name": "extensions",
-        "type": "uint256[]"
+        "internalType": "bool",
+        "name": "isPrivate",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresInviteCode",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresWhitelist",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresConfidentialAccess",
+        "type": "bool"
+      },
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "capacity",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "priceWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "transferable",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct EventNestTicket.TierInput[]",
+        "name": "tiers",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "createEventWithTiers",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "name": "encryptedTierConditionConfigured",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -680,12 +928,12 @@ export const abi = [
         "type": "uint256"
       }
     ],
-    "name": "eventInviteCodes",
+    "name": "eventOrganizers",
     "outputs": [
       {
-        "internalType": "bytes32",
+        "internalType": "address",
         "name": "",
-        "type": "bytes32"
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -699,12 +947,12 @@ export const abi = [
         "type": "uint256"
       }
     ],
-    "name": "eventOrganizers",
+    "name": "eventPendingRevenue",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "uint256",
         "name": "",
-        "type": "address"
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -793,6 +1041,11 @@ export const abi = [
         "internalType": "uint256",
         "name": "totalTicketsSold",
         "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "requiresConfidentialAccess",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -897,6 +1150,11 @@ export const abi = [
             "internalType": "uint256",
             "name": "totalTicketsSold",
             "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "requiresConfidentialAccess",
+            "type": "bool"
           }
         ],
         "internalType": "struct EventNestTicket.Event",
@@ -962,6 +1220,40 @@ export const abi = [
     "inputs": [
       {
         "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "requester",
+        "type": "address"
+      }
+    ],
+    "name": "getPendingConfidentialAccess",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "accessResult",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bool",
+        "name": "used",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
         "name": "ticketId",
         "type": "uint256"
       }
@@ -984,6 +1276,11 @@ export const abi = [
             "internalType": "bool",
             "name": "used",
             "type": "bool"
+          },
+          {
+            "internalType": "uint8",
+            "name": "tierId",
+            "type": "uint8"
           }
         ],
         "internalType": "struct EventNestTicket.Ticket",
@@ -1041,6 +1338,11 @@ export const abi = [
             "internalType": "uint256",
             "name": "totalTicketsSold",
             "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "requiresConfidentialAccess",
+            "type": "bool"
           }
         ],
         "internalType": "struct EventNestTicket.Event",
@@ -1083,6 +1385,113 @@ export const abi = [
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      }
+    ],
+    "name": "getTicketTier",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "capacity",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "priceWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "transferable",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalSold",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct EventNestTicket.TicketTier",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      }
+    ],
+    "name": "getTicketTiers",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "capacity",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "priceWei",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "transferable",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "active",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "totalSold",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct EventNestTicket.TicketTier[]",
+        "name": "",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -1173,17 +1582,61 @@ export const abi = [
         "type": "address"
       },
       {
-        "internalType": "bool",
-        "name": "isVIP",
-        "type": "bool"
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
       },
       {
         "internalType": "bytes32",
-        "name": "accessProof",
+        "name": "accessResultHandle",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bool",
+        "name": "accessGranted",
+        "type": "bool"
+      },
+      {
+        "internalType": "bytes",
+        "name": "decryptSignature",
+        "type": "bytes"
+      }
+    ],
+    "name": "mintConfidentialTicket",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
         "type": "bytes32"
       }
     ],
-    "name": "mintTicket",
+    "name": "mintTicketForTier",
     "outputs": [
       {
         "internalType": "uint256",
@@ -1241,6 +1694,57 @@ export const abi = [
     ],
     "name": "removeFromWhitelist",
     "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "ctHash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "securityZone",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "utype",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct InEuint128",
+        "name": "encryptedCredential",
+        "type": "tuple"
+      }
+    ],
+    "name": "requestConfidentialAccess",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -1321,12 +1825,122 @@ export const abi = [
         "type": "uint256"
       },
       {
-        "internalType": "bytes32",
-        "name": "codeHash",
-        "type": "bytes32"
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "ctHash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "securityZone",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "utype",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct InEuint128",
+        "name": "encryptedCredential",
+        "type": "tuple"
       }
     ],
-    "name": "setInviteCode",
+    "name": "setConfidentialInviteCode",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "ctHash",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint8",
+            "name": "securityZone",
+            "type": "uint8"
+          },
+          {
+            "internalType": "uint8",
+            "name": "utype",
+            "type": "uint8"
+          },
+          {
+            "internalType": "bytes",
+            "name": "signature",
+            "type": "bytes"
+          }
+        ],
+        "internalType": "struct InEuint128",
+        "name": "encryptedCondition",
+        "type": "tuple"
+      }
+    ],
+    "name": "setEncryptedTierCondition",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "eventId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "capacity",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "priceWei",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "transferable",
+        "type": "bool"
+      },
+      {
+        "internalType": "bool",
+        "name": "active",
+        "type": "bool"
+      }
+    ],
+    "name": "setTicketTier",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1387,6 +2001,11 @@ export const abi = [
         "internalType": "bool",
         "name": "used",
         "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "tierId",
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",
@@ -1511,27 +2130,11 @@ export const abi = [
         "internalType": "uint256",
         "name": "eventId",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      },
-      {
-        "internalType": "bytes32",
-        "name": "accessProof",
-        "type": "bytes32"
       }
     ],
-    "name": "verifyAccess",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
+    "name": "withdrawEventRevenue",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ] as const

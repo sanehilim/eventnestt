@@ -39,6 +39,13 @@ export function Header() {
               Dashboard
             </Link>
             <Link
+              href="/tickets"
+              className="text-sm tracking-wide text-[#666666] hover:text-[#1a1a1a] boty-transition flex items-center gap-1.5"
+            >
+              <Ticket className="w-3.5 h-3.5" />
+              My Tickets
+            </Link>
+            <Link
               href="/privacy"
               className="text-sm tracking-wide text-[#666666] hover:text-[#1a1a1a] boty-transition flex items-center gap-1.5"
             >
@@ -49,9 +56,9 @@ export function Header() {
 
           {/* Logo */}
           <Link href="/" className="absolute left-1/2 -translate-x-1/2">
-            <h1 className="text-3xl tracking-wider text-[#1a1a1a] font-semibold">
+            <span className="block text-3xl tracking-wider text-[#1a1a1a] font-semibold">
               <span className="gradient-text">Event</span>Nest
-            </h1>
+            </span>
           </Link>
 
           <div className="flex items-center gap-4">
@@ -88,6 +95,14 @@ export function Header() {
             >
               <Ticket className="w-3.5 h-3.5" />
               Dashboard
+            </Link>
+            <Link
+              href="/tickets"
+              className="text-sm tracking-wide text-[#666666] hover:text-[#1a1a1a] boty-transition flex items-center gap-1.5"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Ticket className="w-3.5 h-3.5" />
+              My Tickets
             </Link>
             <Link
               href="/privacy"

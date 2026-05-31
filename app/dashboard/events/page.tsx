@@ -5,6 +5,7 @@ import { Calendar, MapPin, Users, Lock, EyeOff, Edit, Eye as ViewEvent, Loader2 
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { useMyEvents } from "@/hooks/use-events"
+import { formatEventDate } from "@/lib/onchain"
 
 export default function EventsListPage() {
   const { events, loading } = useMyEvents()
@@ -58,7 +59,8 @@ export default function EventsListPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {events.map((event) => {
-                    const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
+                    const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess
+                    const activeTierCount = event.tiers.filter((tier) => tier.active).length
 
                     return (
                     <tr key={event.id} className="hover:bg-secondary/30 boty-transition">
@@ -76,7 +78,7 @@ export default function EventsListPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-1 text-muted-foreground text-sm">
                           <Calendar className="w-4 h-4" />
-                          {new Date(Number(event.eventDate)).toLocaleDateString()}
+                          {formatEventDate(event.eventDate, { month: "short", day: "numeric", year: "numeric" })}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
@@ -86,7 +88,7 @@ export default function EventsListPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-primary font-medium">
-                        {event.ticketPrice}
+                        {activeTierCount > 1 ? `${activeTierCount} tiers` : event.ticketPrice}
                       </td>
                       <td className="px-6 py-4">
                         {isGated ? (

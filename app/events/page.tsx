@@ -7,6 +7,7 @@ import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { Calendar, MapPin, Users, Ticket, EyeOff, Lock, SlidersHorizontal, X, Loader2 } from "lucide-react"
 import { useEvents, type Event } from "@/hooks/use-events"
+import { formatEventDate } from "@/lib/onchain"
 
 type EventCategory = "all" | "hackathon" | "conference" | "vip" | "workshop" | "meetup"
 type EventPrivacy = "all" | "public" | "private"
@@ -16,7 +17,8 @@ const categories = [
   { value: "hackathon" as EventCategory, label: "Hackathons" },
   { value: "conference" as EventCategory, label: "Conferences" },
   { value: "workshop" as EventCategory, label: "Workshops" },
-  { value: "vip" as EventCategory, label: "VIP" }
+  { value: "vip" as EventCategory, label: "VIP" },
+  { value: "meetup" as EventCategory, label: "Meetups" },
 ]
 
 const privacyFilters = [
@@ -26,12 +28,7 @@ const privacyFilters = [
 ]
 
 function formatDate(timestamp: bigint): string {
-  try {
-    const date = new Date(Number(timestamp))
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-  } catch {
-    return "TBA"
-  }
+  return formatEventDate(timestamp, { month: "short", day: "numeric", year: "numeric" })
 }
 
 export default function EventsPage() {
@@ -42,14 +39,20 @@ export default function EventsPage() {
   const [isVisible, setIsVisible] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  const filteredEvents = events.filter(event => {
-    const categoryMatch = selectedCategory === "all" || event.category === selectedCategory
-    const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
-    const privacyMatch = selectedPrivacy === "all" ||
-      (selectedPrivacy === "private" && isGated) ||
-      (selectedPrivacy === "public" && !isGated)
-    return categoryMatch && privacyMatch
-  })
+  const filteredEvents = events
+    .filter(event => {
+      const categoryMatch = selectedCategory === "all" || event.category === selectedCategory
+      const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess
+      const privacyMatch = selectedPrivacy === "all" ||
+        (selectedPrivacy === "private" && isGated) ||
+        (selectedPrivacy === "public" && !isGated)
+      return categoryMatch && privacyMatch
+    })
+    .sort((left, right) => {
+      const leftScore = left.totalTicketsSold * 3 + left.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
+      const rightScore = right.totalTicketsSold * 3 + right.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
+      return rightScore - leftScore || Number(left.eventDate - right.eventDate)
+    })
 
   useEffect(() => {
     const node = gridRef.current
@@ -112,7 +115,7 @@ export default function EventsPage() {
               Public & Gated Events
             </h1>
             <p className="text-lg text-[#666666] max-w-md mx-auto">
-              Discover privacy-first Web3 events with hashed access controls and a CoFHE-ready roadmap
+              Discover live Web3 events ranked by on-chain activity and CoFHE-ready access controls
             </p>
           </div>
 
@@ -205,6 +208,28 @@ export default function EventsPage() {
                     </button>
                   ))}
                 </div>
+                <div className="mt-8 space-y-3">
+                  <h3 className="text-sm font-medium text-[#666666]">Access</h3>
+                  {privacyFilters.map((filter) => (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedPrivacy(filter.value)
+                        setShowFilters(false)
+                      }}
+                      className={`flex w-full items-center gap-2 rounded-lg px-6 py-4 text-left boty-transition ${
+                        selectedPrivacy === filter.value
+                          ? "bg-[#0f766e] text-white"
+                          : "bg-[#f5f5f5] text-[#1a1a1a]"
+                      }`}
+                    >
+                      {filter.value === "private" && <Lock className="w-4 h-4" />}
+                      {filter.value === "public" && <EyeOff className="w-4 h-4" />}
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -244,7 +269,9 @@ function EventCard({
   isVisible: boolean
 }) {
   const [imageLoaded, setImageLoaded] = useState(false)
-  const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist
+  const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess
+  const activeTiers = event.tiers.filter((tier) => tier.active)
+  const priceLabel = activeTiers.length > 1 ? `From ${activeTiers[0]?.price || event.ticketPrice}` : event.ticketPrice
 
   return (
     <Link
@@ -312,7 +339,7 @@ function EventCard({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Ticket className="w-4 h-4 text-[#0f766e]" />
-              <span className="text-sm font-medium text-[#1a1a1a]">{event.ticketPrice}</span>
+              <span className="text-sm font-medium text-[#1a1a1a]">{priceLabel}</span>
             </div>
             <span className="text-sm text-[#0f766e] group-hover:translate-x-1 boty-transition">
               View Details

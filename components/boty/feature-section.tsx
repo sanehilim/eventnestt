@@ -6,8 +6,8 @@ import { Shield, Lock, Eye, Users, Ticket, Zap } from "lucide-react"
 const features = [
   {
     icon: Shield,
-    title: "Hashed Access",
-    description: "Invite codes checked by hash"
+    title: "CoFHE Access",
+    description: "Encrypted invite checks"
   },
   {
     icon: Lock,
@@ -47,10 +47,10 @@ export function FeatureSection() {
                 </div>
                 <div>
                   <h3 className="text-xl text-[#1a1a1a] mb-2 font-medium">
-                    <span className="gradient-text">CoFHE-ready</span> roadmap
+                    <span className="gradient-text">CoFHE</span> live on Sepolia
                   </h3>
                   <p className="text-sm text-[#666666] leading-relaxed">
-                    Built around auditable on-chain access today, with Fhenix encrypted checks documented as the next privacy layer.
+                    Built around auditable on-chain tickets with encrypted invite credential checks for gated access.
                   </p>
                 </div>
               </div>
@@ -65,7 +65,7 @@ export function FeatureSection() {
                 <span className="text-xs uppercase tracking-widest text-[#0f766e]">On-Chain Access</span>
               </div>
               <h3 className="text-3xl md:text-4xl text-[#1a1a1a] mb-2">
-                Hashed
+                Confidential
               </h3>
               <h3 className="text-2xl md:text-3xl text-[#666666] mb-4">
                 Gates
@@ -74,7 +74,7 @@ export function FeatureSection() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-[#1a1a1a]/90 text-sm">
                   <Shield className="w-4 h-4 text-[#0f766e] flex-shrink-0" />
-                  <span>Hashed Invite Codes</span>
+                  <span>Encrypted Invite Credentials</span>
                 </div>
                 <div className="flex items-center gap-2 text-[#1a1a1a]/90 text-sm">
                   <Ticket className="w-4 h-4 text-[#0f766e] flex-shrink-0" />
@@ -133,7 +133,7 @@ export function FeatureSection() {
               Privacy without compromise.
             </h2>
             <p className="text-lg text-[#666666] leading-relaxed mb-10 max-w-md animate-blur-in opacity-0" style={{ animationDelay: '0.6s', animationFillMode: 'forwards' }}>
-              EventNest keeps event access verifiable on-chain today with hashed invite codes, wallet allowlists, paid NFT minting, transfers, and QR check-in.
+              EventNest keeps event access verifiable on-chain with CoFHE invite credentials, wallet allowlists, paid NFT minting, transfers, and QR check-in.
             </p>
 
             {/* Feature Cards */}
