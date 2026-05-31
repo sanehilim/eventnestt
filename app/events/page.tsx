@@ -39,7 +39,28 @@ export default function EventsPage() {
   const [isVisible, setIsVisible] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  const filteredEvents = events
+  const categoryCounts: Record<EventCategory, number> = {
+    all: events.length,
+    hackathon: 0,
+    conference: 0,
+    vip: 0,
+    workshop: 0,
+    meetup: 0,
+  }
+
+  for (const event of events) {
+    if (event.category in categoryCounts) {
+      categoryCounts[event.category as EventCategory] += 1
+    }
+  }
+
+  const rankedEvents = [...events].sort((left, right) => {
+    const leftScore = left.totalTicketsSold * 3 + left.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
+    const rightScore = right.totalTicketsSold * 3 + right.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
+    return rightScore - leftScore || Number(left.eventDate - right.eventDate)
+  })
+
+  const filteredEvents = rankedEvents
     .filter(event => {
       const categoryMatch = selectedCategory === "all" || event.category === selectedCategory
       const isGated = event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess
@@ -47,11 +68,6 @@ export default function EventsPage() {
         (selectedPrivacy === "private" && isGated) ||
         (selectedPrivacy === "public" && !isGated)
       return categoryMatch && privacyMatch
-    })
-    .sort((left, right) => {
-      const leftScore = left.totalTicketsSold * 3 + left.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
-      const rightScore = right.totalTicketsSold * 3 + right.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
-      return rightScore - leftScore || Number(left.eventDate - right.eventDate)
     })
 
   useEffect(() => {
@@ -133,21 +149,27 @@ export default function EventsPage() {
             {/* Desktop Filters */}
             <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
               <div className="grid min-w-0 flex-1 grid-cols-6 gap-1.5 rounded-2xl border border-[#e5e5e5] bg-white p-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-                {categories.map((category) => (
-                  <button
-                    key={category.value}
-                    type="button"
-                    onClick={() => setSelectedCategory(category.value)}
-                    aria-pressed={selectedCategory === category.value}
-                    className={`h-11 rounded-xl px-3 text-sm font-semibold capitalize boty-transition ${
-                      selectedCategory === category.value
-                        ? "bg-[#1a1a1a] text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
-                        : "text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
-                    }`}
-                  >
-                    {category.label}
-                  </button>
-                ))}
+                {categories.map((category) => {
+                  const disabled = category.value !== "all" && categoryCounts[category.value] === 0
+                  return (
+                    <button
+                      key={category.value}
+                      type="button"
+                      onClick={() => setSelectedCategory(category.value)}
+                      disabled={disabled}
+                      aria-pressed={selectedCategory === category.value}
+                      className={`h-11 rounded-xl px-3 text-sm font-semibold capitalize boty-transition ${
+                        selectedCategory === category.value
+                          ? "bg-[#1a1a1a] text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
+                          : disabled
+                            ? "cursor-not-allowed text-[#b5b5b5]"
+                            : "text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
+                      }`}
+                    >
+                      {category.label}
+                    </button>
+                  )
+                })}
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-[#e5e5e5] bg-white p-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
@@ -192,23 +214,29 @@ export default function EventsPage() {
                 </div>
                 <div className="space-y-3">
                   <h3 className="text-sm font-medium text-[#666666]">Category</h3>
-                  {categories.map((category) => (
-                    <button
-                      key={category.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCategory(category.value)
-                        setShowFilters(false)
-                      }}
-                      className={`w-full px-6 py-4 rounded-lg text-left capitalize boty-transition ${
-                        selectedCategory === category.value
-                          ? "bg-[#0f766e] text-white"
-                          : "bg-[#f5f5f5] text-[#1a1a1a]"
-                      }`}
-                    >
-                      {category.label}
-                    </button>
-                  ))}
+                  {categories.map((category) => {
+                    const disabled = category.value !== "all" && categoryCounts[category.value] === 0
+                    return (
+                      <button
+                        key={category.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(category.value)
+                          setShowFilters(false)
+                        }}
+                        disabled={disabled}
+                        className={`w-full rounded-lg px-6 py-4 text-left capitalize boty-transition ${
+                          selectedCategory === category.value
+                            ? "bg-[#0f766e] text-white"
+                            : disabled
+                              ? "cursor-not-allowed bg-[#f5f5f5] text-[#b5b5b5]"
+                              : "bg-[#f5f5f5] text-[#1a1a1a]"
+                        }`}
+                      >
+                        {category.label}
+                      </button>
+                    )
+                  })}
                 </div>
                 <div className="mt-8 space-y-3">
                   <h3 className="text-sm font-medium text-[#666666]">Access</h3>

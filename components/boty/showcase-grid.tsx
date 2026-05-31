@@ -28,7 +28,26 @@ export function ShowcaseGrid() {
   const [isVisible, setIsVisible] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  const showcaseEvents = events.slice(0, 4)
+  const categoryCounts: Record<EventCategory, number> = {
+    all: events.length,
+    hackathon: 0,
+    conference: 0,
+    vip: 0,
+    workshop: 0,
+    meetup: 0,
+  }
+
+  for (const event of events) {
+    if (event.category in categoryCounts) {
+      categoryCounts[event.category as EventCategory] += 1
+    }
+  }
+
+  const showcaseEvents = [...events].sort((left, right) => {
+    const leftScore = left.totalTicketsSold * 3 + left.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
+    const rightScore = right.totalTicketsSold * 3 + right.tiers.filter((tier) => tier.active && tier.totalSold > 0).length
+    return rightScore - leftScore || Number(left.eventDate - right.eventDate)
+  })
   const filteredEvents = selectedCategory === "all"
     ? showcaseEvents
     : showcaseEvents.filter(event => event.category === selectedCategory)
@@ -86,21 +105,27 @@ export function ShowcaseGrid() {
         {/* Segmented Control */}
         <div className="mb-12 flex w-full justify-center overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <div className="inline-flex min-w-max items-center gap-1.5 rounded-2xl border border-[#e5e5e5] bg-white p-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-            {categories.map((category) => (
-              <button
-                key={category.value}
-                type="button"
-                onClick={() => setSelectedCategory(category.value)}
-                aria-pressed={selectedCategory === category.value}
-                className={`h-11 rounded-xl px-5 text-sm font-semibold transition-all duration-300 ${
-                  selectedCategory === category.value
-                    ? "bg-[#1a1a1a] text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
-                    : "text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
-                }`}
-              >
-                {category.label}
-              </button>
-            ))}
+            {categories.map((category) => {
+              const disabled = category.value !== "all" && categoryCounts[category.value] === 0
+              return (
+                <button
+                  key={category.value}
+                  type="button"
+                  onClick={() => setSelectedCategory(category.value)}
+                  disabled={disabled}
+                  aria-pressed={selectedCategory === category.value}
+                  className={`h-11 rounded-xl px-5 text-sm font-semibold transition-all duration-300 ${
+                    selectedCategory === category.value
+                      ? "bg-[#1a1a1a] text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
+                      : disabled
+                        ? "cursor-not-allowed text-[#b5b5b5]"
+                        : "text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
+                  }`}
+                >
+                  {category.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 

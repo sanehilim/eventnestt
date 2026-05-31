@@ -43,12 +43,16 @@ export default function EventDetailPage() {
   const userHasTicket = hasExistingTicket || isRegistered || accessStatus === "approved"
 
   useEffect(() => {
-    setAccessCode("")
-    setShowAccessForm(false)
-    setAccessStatus("idle")
-    setIsRegistered(false)
-    setActionError("")
-    setSelectedTierId(0)
+    const timer = window.setTimeout(() => {
+      setAccessCode("")
+      setShowAccessForm(false)
+      setAccessStatus("idle")
+      setIsRegistered(false)
+      setActionError("")
+      setSelectedTierId(0)
+    }, 0)
+
+    return () => window.clearTimeout(timer)
   }, [address, eventId])
 
   const handleAccessRequest = async () => {
