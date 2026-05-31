@@ -91,6 +91,10 @@ export const IPFS_GATEWAY_URL = (
   process.env.NEXT_PUBLIC_IPFS_GATEWAY || "https://gateway.pinata.cloud/ipfs"
 ).replace(/\/+$/, "")
 
+export const EVENT_IMAGE_FALLBACK_URL =
+  process.env.NEXT_PUBLIC_EVENT_IMAGE_FALLBACK ||
+  "https://res.cloudinary.com/dcaagefin/image/upload/f_auto,q_auto,c_fill,w_1200,h_675/v1780220361/eventnest/default-event-cover.png"
+
 function base64EncodeUtf8(value: string) {
   const bytes = new TextEncoder().encode(value)
   let binary = ""
@@ -124,6 +128,11 @@ export function ipfsToGatewayUrl(value?: string) {
 
   const path = value.slice("ipfs://".length).replace(/^ipfs\//, "")
   return `${IPFS_GATEWAY_URL}/${path}`
+}
+
+export function normalizeEventImageUrl(value?: string) {
+  const image = ipfsToGatewayUrl(value?.trim())
+  return image || EVENT_IMAGE_FALLBACK_URL
 }
 
 export function encodeEventMetadata(metadata: EventMetadata) {
@@ -179,6 +188,7 @@ export async function buildEventMetadataURI(metadata: EventMetadata) {
     app: "EventNest",
     schema: "eventnest.event.metadata.v1",
     ...metadata,
+    image: normalizeEventImageUrl(metadata.image),
   } satisfies EventMetadata
 
   try {

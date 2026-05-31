@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
+import { normalizeEventImageUrl } from "@/lib/onchain"
 
 export const runtime = "nodejs"
 
@@ -22,7 +23,7 @@ function cleanMetadata(body: MetadataBody) {
     schema: "eventnest.event.metadata.v1",
     name: cleanString(body.name, 120),
     description: cleanString(body.description, 2_000),
-    image: cleanString(body.image, 600),
+    image: normalizeEventImageUrl(cleanString(body.image, 600)),
     location: cleanString(body.location, 180),
     category: cleanString(body.category, 80),
     ticketPrice: cleanString(body.ticketPrice, 80),

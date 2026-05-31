@@ -139,6 +139,7 @@ Wave 5 is the final version for this submission.
 - Chain: Ethereum Sepolia
 - Chain ID: `11155111`
 - Metadata storage: Pinata/IPFS
+- Event image fallback: Cloudinary
 - Frontend hosting: Vercel
 
 Source verification still requires an `ETHERSCAN_API_KEY` from a secured operator environment.
@@ -156,6 +157,7 @@ Source verification still requires an `ETHERSCAN_API_KEY` from a secured operato
 - Fhenix CoFHE contracts
 - `@cofhe/sdk`
 - Pinata/IPFS
+- Cloudinary
 - Vercel
 - Ethereum Sepolia
 
@@ -171,6 +173,7 @@ Browser
 Next.js App
   |
   |-- /api/metadata pins event metadata to Pinata/IPFS
+  |-- Cloudinary fallback image for events without custom artwork
   |-- Reads contract state through Sepolia RPC
   |-- Writes through connected user wallet
   |
@@ -272,6 +275,7 @@ NEXT_PUBLIC_SEPOLIA_RPC_URL=https://ethereum-sepolia.publicnode.com
 NEXT_PUBLIC_CONTRACT_ADDRESS=0xc19a7f4636d8320afcb1d19e79cab1747793a380
 NEXT_PUBLIC_CONTRACT_DEPLOY_BLOCK=10959329
 NEXT_PUBLIC_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs
+NEXT_PUBLIC_EVENT_IMAGE_FALLBACK=https://res.cloudinary.com/dcaagefin/image/upload/f_auto,q_auto,c_fill,w_1200,h_675/v1780220361/eventnest/default-event-cover.png
 ```
 
 Server-only metadata variables:
@@ -399,6 +403,7 @@ npm run test:sepolia
 - Fresh Sepolia contract deployed.
 - Vercel production env updated.
 - Pinata/IPFS metadata route configured.
+- Cloudinary event image fallback configured.
 - Lint passed.
 - TypeScript passed.
 - Production build passed.

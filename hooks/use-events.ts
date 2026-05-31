@@ -10,15 +10,13 @@ import {
   APP_RPC_URL,
   ZERO_HASH,
   buildEventMetadataURI,
-  ipfsToGatewayUrl,
+  normalizeEventImageUrl,
   resolveEventMetadata,
 } from "@/lib/onchain"
 import type { EncryptedUint128ContractInput } from "@/lib/cofhe"
 
 export const CONTRACT_ADDRESS = APP_DEPLOYMENT.contractAddress
 export const CONTRACT_DEPLOY_BLOCK = APP_DEPLOYMENT.deployBlock
-
-const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80"
 
 export interface Event {
   id: number
@@ -162,7 +160,7 @@ async function contractEventToEvent(id: number, raw: ContractEvent, organizer?: 
     totalTicketsSold: Number(raw.totalTicketsSold),
     ticketPrice: primaryTier?.price || metadata.ticketPrice || formatTicketPrice(raw.ticketPriceWei),
     tiers,
-    image: ipfsToGatewayUrl(metadata.image) || DEFAULT_IMAGE,
+    image: normalizeEventImageUrl(metadata.image),
     location: metadata.location || "TBD",
     category: metadata.category || "conference",
     organizer,
