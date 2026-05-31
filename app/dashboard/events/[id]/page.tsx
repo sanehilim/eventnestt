@@ -6,6 +6,7 @@ import { useParams } from "next/navigation"
 import { ArrowLeft, Check, DollarSign, Loader2, ScanLine, Shield, Ticket, Trash2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
+import { EventImageUpload } from "@/components/event-image-upload"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import {
   useEvent,
@@ -458,16 +459,12 @@ export default function ManageEventAccessPage() {
                       className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
                     />
                   </label>
-                  <label className="block md:col-span-2">
-                    <span className="block text-sm font-medium text-[#1a1a1a] mb-2">Image URL</span>
-                    <input
-                      type="url"
+                  <div className="md:col-span-2">
+                    <EventImageUpload
                       value={eventForm.image}
-                      onChange={(value) => setEventForm((current) => ({ ...current, image: value.target.value }))}
-                      placeholder="https://..."
-                      className="w-full bg-white border border-[#e5e5e5] rounded-lg px-4 py-3 text-[#1a1a1a] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50"
+                      onChange={(image) => setEventForm((current) => ({ ...current, image }))}
                     />
-                  </label>
+                  </div>
                   <label className="block md:col-span-2">
                     <span className="block text-sm font-medium text-[#1a1a1a] mb-2">Description</span>
                     <textarea

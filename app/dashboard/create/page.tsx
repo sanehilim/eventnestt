@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff, Plus, Trash2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
+import { EventImageUpload } from "@/components/event-image-upload"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
 import { useCreateEvent } from "@/hooks/use-events"
@@ -345,16 +346,10 @@ export default function CreateEventPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Image URL</label>
-                  <input
-                    type="url"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-[#1a1a1a] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#0f766e]/50 boty-transition"
-                  />
-                </div>
+                <EventImageUpload
+                  value={formData.image}
+                  onChange={(image) => setFormData((current) => ({ ...current, image }))}
+                />
 
                 <div>
                   <label className="block text-sm font-medium text-[#1a1a1a] mb-2">Max Attendees</label>
@@ -594,9 +589,14 @@ export default function CreateEventPage() {
                     </div>
                     <div className="flex justify-between gap-4">
                       <dt className="text-[#666666]">Image</dt>
-                      <dd className="text-[#1a1a1a] truncate">{formData.image || "Default event image"}</dd>
+                      <dd className="text-[#1a1a1a]">{formData.image ? "Uploaded" : "Fallback image"}</dd>
                     </div>
                   </dl>
+                  {formData.image && (
+                    <div className="mt-4 aspect-video overflow-hidden rounded-lg border border-[#e5e5e5] bg-[#f5f5f5]">
+                      <img src={formData.image} alt="Event cover preview" className="h-full w-full object-cover" />
+                    </div>
+                  )}
                 </div>
 
                 <div className="bg-white rounded-lg p-6 border border-[#e5e5e5]">

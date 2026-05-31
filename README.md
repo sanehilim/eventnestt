@@ -15,7 +15,7 @@ EventNest replaces manual event guest lists, copy-pasted invite codes, and unver
 Organizers can:
 
 - Create events on Ethereum Sepolia.
-- Add event metadata, location, category, date, capacity, and cover image.
+- Add event metadata, location, category, date, capacity, and locally uploaded cover image.
 - Pin new event metadata to IPFS through Pinata.
 - Configure public, whitelist-only, invite-gated, or confidential CoFHE-gated events.
 - Create multiple ticket tiers with capacity, price, transferability, and active/inactive status.
@@ -68,14 +68,14 @@ The result is useful for:
 
 | Area            | Feature                                                                                        |
 | --------------- | ---------------------------------------------------------------------------------------------- |
-| Event creation  | Name, description, date, location, category, image, capacity, privacy settings                 |
+| Event creation  | Name, description, date, location, category, local image upload, capacity, privacy settings    |
 | Ticketing       | ERC721 tickets, multiple tiers, free and paid minting, tier capacity, transferability controls |
 | Privacy         | CoFHE encrypted invite credentials, confidential access result verification                    |
 | Access control  | Public events, private events, whitelist-only events, invite-gated events                      |
 | Organizer tools | Dashboard, event editor, whitelist manager, invite rotation, tier editing, QR check-in         |
 | Attendee tools  | Event browsing, ticket minting, My Tickets page, QR payloads, transfers, burns                 |
 | Revenue         | Paid ticket revenue accrues in contract and can be withdrawn by the organizer                  |
-| Metadata        | IPFS metadata pinning through Pinata with data URI fallback                                    |
+| Metadata        | IPFS metadata pinning through Pinata, event image uploads, data URI fallback                   |
 | Production      | Vercel deployment, Sepolia contract, smoke tests, read/write E2E scripts                       |
 
 
@@ -139,6 +139,7 @@ Wave 5 is the final version for this submission.
 - Chain: Ethereum Sepolia
 - Chain ID: `11155111`
 - Metadata storage: Pinata/IPFS
+- Event image upload: Cloudinary when server credentials are configured, Pinata fallback otherwise
 - Event image fallback: Cloudinary
 - Frontend hosting: Vercel
 
@@ -278,9 +279,13 @@ NEXT_PUBLIC_IPFS_GATEWAY=https://gateway.pinata.cloud/ipfs
 NEXT_PUBLIC_EVENT_IMAGE_FALLBACK=https://res.cloudinary.com/dcaagefin/image/upload/f_auto,q_auto,c_fill,w_1200,h_675/v1780220361/eventnest/default-event-cover.png
 ```
 
-Server-only metadata variables:
+Server-only upload and metadata variables:
 
 ```env
+CLOUDINARY_CLOUD_NAME=dcaagefin
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_UPLOAD_PRESET=
 PINATA_JWT=
 PINATA_API_KEY=
 PINATA_API_SECRET=
@@ -294,7 +299,7 @@ DEPLOYER_PRIVATE_KEY=
 ETHERSCAN_API_KEY=
 ```
 
-Never commit private keys, OpenAI keys, Pinata secrets, or Etherscan keys. Vercel runtime only needs the public chain variables and the server-only Pinata values.
+Never commit private keys, OpenAI keys, Cloudinary secrets, Pinata secrets, or Etherscan keys. Vercel runtime needs the public chain variables plus server-only Cloudinary or Pinata values for image and metadata uploads.
 
 ## Local Development
 
@@ -403,6 +408,7 @@ npm run test:sepolia
 - Fresh Sepolia contract deployed.
 - Vercel production env updated.
 - Pinata/IPFS metadata route configured.
+- Local event image upload configured with Cloudinary support and Pinata fallback.
 - Cloudinary event image fallback configured.
 - Lint passed.
 - TypeScript passed.
