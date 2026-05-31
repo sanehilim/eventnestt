@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
+import Image from "next/image"
 import { ImageIcon, ImagePlus, Loader2, Upload, X } from "lucide-react"
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
@@ -107,7 +108,7 @@ export function EventImageUpload({ disabled = false, label = "Event Image", onCh
         {value ? (
           <div className="grid gap-4 p-4 sm:grid-cols-[180px_1fr] sm:items-center">
             <div className="aspect-video overflow-hidden rounded-lg bg-[#f5f5f5]">
-              <img src={value} alt="Event cover preview" className="h-full w-full object-cover" />
+              <Image src={value} alt="Event cover preview" width={360} height={203} className="h-full w-full object-cover" />
             </div>
             <div className="min-w-0">
               <p className="mb-3 truncate text-sm text-[#666666]">{value}</p>

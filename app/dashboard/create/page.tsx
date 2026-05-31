@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft, ArrowRight, Check, Calendar, Shield, Ticket, Loader2, Lock, EyeOff, Plus, Trash2 } from "lucide-react"
 import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
@@ -594,7 +595,7 @@ export default function CreateEventPage() {
                   </dl>
                   {formData.image && (
                     <div className="mt-4 aspect-video overflow-hidden rounded-lg border border-[#e5e5e5] bg-[#f5f5f5]">
-                      <img src={formData.image} alt="Event cover preview" className="h-full w-full object-cover" />
+                      <Image src={formData.image} alt="Event cover preview" width={720} height={405} className="h-full w-full object-cover" />
                     </div>
                   )}
                 </div>
