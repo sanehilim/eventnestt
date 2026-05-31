@@ -120,7 +120,7 @@ export default function EventsPage() {
           </div>
 
           {/* Filter Bar */}
-          <div className="flex items-center justify-between mb-10 pb-6 border-b border-[#e5e5e5]">
+          <div className="mb-10 flex items-center justify-between gap-4 border-b border-[#e5e5e5] pb-6">
             <button
               type="button"
               onClick={() => setShowFilters(!showFilters)}
@@ -131,17 +131,18 @@ export default function EventsPage() {
             </button>
 
             {/* Desktop Filters */}
-            <div className="hidden lg:flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-[#f5f5f5] rounded-full p-1">
+            <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
+              <div className="grid min-w-0 flex-1 grid-cols-6 gap-1.5 rounded-2xl border border-[#e5e5e5] bg-white p-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                 {categories.map((category) => (
                   <button
                     key={category.value}
                     type="button"
                     onClick={() => setSelectedCategory(category.value)}
-                    className={`px-4 py-2 rounded-full text-sm capitalize boty-transition ${
+                    aria-pressed={selectedCategory === category.value}
+                    className={`h-11 rounded-xl px-3 text-sm font-semibold capitalize boty-transition ${
                       selectedCategory === category.value
-                        ? "bg-[#1a1a1a] text-white"
-                        : "bg-transparent text-[#666666] hover:text-[#1a1a1a]"
+                        ? "bg-[#1a1a1a] text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]"
+                        : "text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
                     }`}
                   >
                     {category.label}
@@ -149,16 +150,17 @@ export default function EventsPage() {
                 ))}
               </div>
 
-              <div className="flex items-center gap-2 bg-[#f5f5f5] rounded-full p-1">
+              <div className="flex shrink-0 items-center gap-1.5 rounded-2xl border border-[#e5e5e5] bg-white p-1.5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
                 {privacyFilters.map((filter) => (
                   <button
                     key={filter.value}
                     type="button"
                     onClick={() => setSelectedPrivacy(filter.value)}
-                    className={`px-4 py-2 rounded-full text-sm capitalize flex items-center gap-1.5 boty-transition ${
+                    aria-pressed={selectedPrivacy === filter.value}
+                    className={`flex h-11 items-center gap-1.5 rounded-xl px-4 text-sm font-semibold capitalize boty-transition ${
                       selectedPrivacy === filter.value
-                        ? "bg-[#0f766e] text-white"
-                        : "bg-transparent text-[#666666] hover:text-[#1a1a1a]"
+                        ? "bg-[#0f766e] text-white shadow-[0_8px_20px_rgba(15,118,110,0.22)]"
+                        : "text-[#666666] hover:bg-[#f5f5f5] hover:text-[#1a1a1a]"
                     }`}
                   >
                     {filter.value === "private" && <Lock className="w-3 h-3" />}

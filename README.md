@@ -133,7 +133,7 @@ npm run test:sepolia
 npm run smoke:production
 ```
 
-## Production Checklist
+## Checklist
 
 - Use a fresh deployer wallet and never commit private keys.
 - Run `npm run build:contract` and confirm the runtime bytecode is below 24,576 bytes.
@@ -142,3 +142,4 @@ npm run smoke:production
 - Update `.env.local`, `.env.example`, Vercel env, and `lib/deployments.ts`.
 - Run lint, TypeScript, audit, production build, Sepolia read E2E, optional write E2E, and smoke tests.
 - Confirm event creation, confidential invite setup, minting, transfer restrictions, and organizer check-in on the newly deployed contract.
+
