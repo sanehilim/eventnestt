@@ -16,8 +16,8 @@ export const DEPLOYMENT_REGISTRY: Record<number, DeploymentInfo> = {
   [sepolia.id]: {
     chainId: sepolia.id,
     chainName: sepolia.name,
-    contractAddress: "0xc19a7f4636d8320afcb1d19e79cab1747793a380",
-    deployBlock: 10959329n,
+    contractAddress: "0x8816edd9fc6a0e5b2605af22a0db5e9f76d58f0a",
+    deployBlock: 10960383n,
     explorerUrl: "https://sepolia.etherscan.io",
     rpcUrl: "https://ethereum-sepolia.publicnode.com",
     supportsCofhe: true,

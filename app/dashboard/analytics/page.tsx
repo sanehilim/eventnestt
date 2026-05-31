@@ -7,11 +7,11 @@ import { Header } from "@/components/boty/header"
 import { Footer } from "@/components/boty/footer"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
-import { formatEther } from "viem"
 import { useMyEvents, useOrganizerRevenue } from "@/hooks/use-events"
+import { formatCompactEthAmount } from "@/lib/eth-format"
 
 function formatPayment(value: bigint) {
-  return value === 0n ? "0 ETH" : `${formatEther(value)} ETH`
+  return formatCompactEthAmount(value)
 }
 
 export default function AnalyticsPage() {
@@ -122,7 +122,7 @@ export default function AnalyticsPage() {
           ) : (
             <>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <div className="bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
+                <div className="min-w-0 overflow-hidden bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
                   <div className="flex items-center justify-between mb-4">
                     <Calendar className="w-8 h-8 text-[#0f766e]" />
                     <span className="text-xs text-[#0f766e] bg-[#0f766e]/10 px-2 py-1 rounded-full">Live</span>
@@ -131,7 +131,7 @@ export default function AnalyticsPage() {
                   <p className="text-3xl font-semibold text-[#1a1a1a]">{analyticsData.totalEvents}</p>
                 </div>
 
-                <div className="bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
+                <div className="min-w-0 overflow-hidden bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
                   <div className="flex items-center justify-between mb-4">
                     <Users className="w-8 h-8 text-[#0f766e]" />
                     <span className="text-xs text-[#10b981] bg-[#10b981]/10 px-2 py-1 rounded-full">Minted</span>
@@ -140,13 +140,15 @@ export default function AnalyticsPage() {
                   <p className="text-3xl font-semibold text-[#1a1a1a]">{analyticsData.totalAttendees.toLocaleString()}</p>
                 </div>
 
-                <div className="bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
+                <div className="min-w-0 overflow-hidden bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
                   <div className="flex items-center justify-between mb-4">
                     <DollarSign className="w-8 h-8 text-[#0f766e]" />
                     <span className="text-xs text-[#10b981] bg-[#10b981]/10 px-2 py-1 rounded-full">Payments</span>
                   </div>
                   <p className="text-[#666666] text-sm mb-1">Total Revenue</p>
-                  <p className="text-3xl font-semibold text-[#1a1a1a]">{analyticsData.totalRevenue}</p>
+                  <p className="break-words text-2xl font-semibold leading-tight text-[#1a1a1a] lg:text-3xl">
+                    {formatCompactEthAmount(analyticsData.totalRevenue)}
+                  </p>
                 </div>
 
                 <div className="bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
@@ -199,7 +201,7 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
                         {activity.amount && (
-                          <span className="text-sm font-medium text-[#10b981]">{activity.amount}</span>
+                          <span className="shrink-0 text-right text-sm font-medium text-[#10b981]">{activity.amount}</span>
                         )}
                       </div>
                     ))}

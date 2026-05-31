@@ -8,6 +8,7 @@ import { Footer } from "@/components/boty/footer"
 import { WalletConnectButton } from "@/components/wallet-connect-button"
 import { useAccount } from "wagmi"
 import { useMyEvents, useOrganizerRevenue } from "@/hooks/use-events"
+import { formatCompactEthAmount } from "@/lib/eth-format"
 
 export default function DashboardPage() {
   const { isConnected, address } = useAccount()
@@ -21,6 +22,8 @@ export default function DashboardPage() {
       (event) => event.isPrivate || event.requiresInviteCode || event.requiresWhitelist || event.requiresConfidentialAccess,
     ).length
     const gatedRatio = totalEvents > 0 ? Math.round((gatedEvents / totalEvents) * 100) : 0
+    const compactPendingRevenue = formatCompactEthAmount(pendingRevenue)
+    const compactTotalRevenue = formatCompactEthAmount(totalRevenue)
 
     return [
       {
@@ -37,8 +40,8 @@ export default function DashboardPage() {
       },
       {
         label: "Revenue",
-        value: totalRevenue,
-        change: totalEvents > 0 ? `Pending ${pendingRevenue}` : "No paid tickets yet",
+        value: compactTotalRevenue,
+        change: totalEvents > 0 ? `Pending ${compactPendingRevenue}` : "No paid tickets yet",
         icon: DollarSign,
       },
       {
@@ -85,16 +88,18 @@ export default function DashboardPage() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {stats.map((stat) => (
-              <div key={stat.label} className="bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
-                <div className="flex items-center justify-between mb-4">
-                  <stat.icon className="w-8 h-8 text-[#0f766e]" />
-                  <span className="text-xs text-[#0f766e] bg-[#0f766e]/10 px-2 py-1 rounded-full">{stat.change}</span>
+              <div key={stat.label} className="min-w-0 overflow-hidden bg-[#f5f5f5] rounded-lg p-6 border border-[#e5e5e5]">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <stat.icon className="w-8 h-8 shrink-0 text-[#0f766e]" />
+                  <span className="min-w-0 max-w-[11rem] truncate whitespace-nowrap rounded-full bg-[#0f766e]/10 px-2 py-1 text-right text-xs leading-tight text-[#0f766e]">
+                    {stat.change}
+                  </span>
                 </div>
                 <p className="text-[#666666] text-sm mb-1">{stat.label}</p>
                 {(loading || (stat.label === "Revenue" && revenueLoading)) && isConnected ? (
                   <Loader2 className="w-6 h-6 text-[#0f766e] animate-spin" />
                 ) : (
-                  <p className="text-3xl font-semibold text-[#1a1a1a]">{stat.value}</p>
+                  <p className="break-words text-2xl font-semibold leading-tight text-[#1a1a1a] lg:text-3xl">{stat.value}</p>
                 )}
               </div>
             ))}

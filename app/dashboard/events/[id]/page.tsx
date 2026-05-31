@@ -15,6 +15,7 @@ import {
   useTicketActions,
   type TicketValidation,
 } from "@/hooks/use-events"
+import { formatCompactEthAmount } from "@/lib/eth-format"
 import { dateInputToEventTimestamp, eventTimestampToDateInput } from "@/lib/onchain"
 import { useAccount } from "wagmi"
 
@@ -49,7 +50,6 @@ export default function ManageEventAccessPage() {
   const { address, isConnected } = useAccount()
   const { event, loading } = useEvent(eventId)
   const {
-    pendingRevenue,
     pendingWei,
     refetch: refetchPendingRevenue,
   } = useEventPendingRevenue(eventId)
@@ -101,6 +101,7 @@ export default function ManageEventAccessPage() {
   >([])
   const [tierConditionDrafts, setTierConditionDrafts] = useState<Record<number, string>>({})
   const [savingTierConditionId, setSavingTierConditionId] = useState<number | null>(null)
+  const compactPendingRevenue = formatCompactEthAmount(pendingWei)
   const privateEventMissingAccessRule =
     eventForm.isPrivate && !eventForm.requiresInviteCode && !eventForm.requiresWhitelist && !event?.requiresConfidentialAccess
   const isOrganizer =
@@ -374,9 +375,9 @@ export default function ManageEventAccessPage() {
                   <h2 className="text-2xl text-[#1a1a1a]">Revenue</h2>
                 </div>
                 <div className="flex flex-col gap-4 rounded-lg border border-[#e5e5e5] bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm text-[#666666]">Available to withdraw</p>
-                    <p className="text-3xl font-semibold text-[#1a1a1a]">{pendingRevenue}</p>
+                    <p className="break-words text-2xl font-semibold leading-tight text-[#1a1a1a] sm:text-3xl">{compactPendingRevenue}</p>
                   </div>
                   <button
                     type="button"
